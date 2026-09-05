@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import re
 from typing import Optional, Tuple
@@ -6,6 +7,8 @@ from fastapi import UploadFile
 
 from app.features.commands.models import CommandName, DispatchResponse, PracticeMode
 from app.features.conversation.service import run_turn_from_text, transcribe_upload
+from app.features.tv.service import power_off as tv_power_off
+from app.features.tv.service import power_on as tv_power_on
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +83,68 @@ def _detect_practice_mode(compact: str) -> Optional[PracticeMode]:
     return None
 
 
+def _has_tv(compact: str) -> bool:
+    # Whisper parte "TV" en "t v" / "t.v." y a veces escribe teevee.
+    blob = _collapsed(compact)
+    if re.search(r"\bt\s*v\b", compact) or "tv" in blob:
+        return True
+    return any(
+        token in blob
+        for token in ("tele", "tivi", "teevee", "chromecast", "cromecast")
+    )
+
+
+def _has_tv_off_verb(compact: str) -> bool:
+    blob = _collapsed(compact)
+    if any(token in compact for token in ("turn off", "power off")):
+        return True
+    return any(
+        token in blob
+        for token in ("apaga", "apague", "disable", "duerme", "apag")
+    )
+
+
+def _has_tv_on_verb(compact: str) -> bool:
+    # "unable tv" / "in able tv" son enable mal oído, no un verbo exacto.
+    blob = _collapsed(compact)
+    if any(token in compact for token in ("turn on", "power on", "pon la", "abre la")):
+        return True
+    return any(
+        token in blob
+        for token in (
+            "enable",
+            "enabl",
+            "nable",
+            "unable",
+            "inable",
+            "anable",
+            "enciend",
+            "prende",
+            "wakeup",
+            "despert",
+            "wake",
+        )
+    )
+
+
+def _is_tv_power_on(compact: str) -> bool:
+    if not _has_tv(compact):
+        return False
+    if _has_tv_off_verb(compact) and not _has_tv_on_verb(compact):
+        return False
+    if _has_tv_on_verb(compact):
+        return True
+    # "ey besto friendo … tv" aunque se coma el enable.
+    return _has_name(compact)
+
+
+def _is_tv_power_off(compact: str) -> bool:
+    # No usar un "apaga" suelto: hace falta tele/tv.
+    if not _has_tv(compact):
+        return False
+    return _has_tv_off_verb(compact)
+
+
 def detect_command(
     transcript: str,
     japanese_enabled: bool,
@@ -90,6 +155,10 @@ def detect_command(
         return "enable_japanese_mode", None
     if _is_disable_japanese(compact):
         return "disable_japanese_mode", None
+    if _is_tv_power_on(compact):
+        return "tv_power_on", None
+    if _is_tv_power_off(compact):
+        return "tv_power_off", None
 
     if japanese_enabled:
         practice = _detect_practice_mode(compact)
@@ -119,6 +188,16 @@ async def dispatch(
     if command == "japanese_turn":
         turn = await run_turn_from_text(transcript, history_json, mode)
         return DispatchResponse(command=command, transcript=transcript, turn=turn)
+
+    if command in ("tv_power_on", "tv_power_off"):
+        action = tv_power_on if command == "tv_power_on" else tv_power_off
+        result = await asyncio.to_thread(action)
+        logger.info("TV command=%s ok=%s message=%s", command, result.ok, result.message)
+        return DispatchResponse(
+            command=command,
+            transcript=transcript,
+            device_message=result.message,
+        )
 
     return DispatchResponse(
         command=command,

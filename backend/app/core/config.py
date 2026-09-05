@@ -13,5 +13,8 @@ class Settings(BaseSettings):
     groq_stt_model: str = "whisper-large-v3-turbo"
     groq_chat_model: str = "openai/gpt-oss-120b"
 
+    # Nombre Cast (substring). Vacío = primer Chromecast / el que parezca TV.
+    tv_cast_name: str = ""
+
 
 settings = Settings()

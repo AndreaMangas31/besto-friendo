@@ -8,6 +8,7 @@ type ChatPanelProps = {
   isSending: boolean;
   recorderError: string | null;
   dispatchError: string | null;
+  notice?: string | null;
   onTalk: () => void;
   onReplay: (speak: string) => void;
 };
@@ -18,6 +19,7 @@ export function ChatPanel({
   isSending,
   recorderError,
   dispatchError,
+  notice,
   onTalk,
   onReplay,
 }: ChatPanelProps) {
@@ -36,6 +38,10 @@ export function ChatPanel({
           <p className="text-center text-sm text-zinc-500">
             Transcribiendo y pensando…
           </p>
+        ) : null}
+
+        {notice ? (
+          <p className="text-center text-sm text-zinc-600">{notice}</p>
         ) : null}
 
         {recorderError ? (

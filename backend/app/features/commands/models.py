@@ -9,6 +9,8 @@ CommandName = Literal[
     "disable_japanese_mode",
     "set_practice_mode",
     "japanese_turn",
+    "tv_power_on",
+    "tv_power_off",
     "unknown",
 ]
 PracticeMode = Literal["conversar", "corregir", "ideas"]
@@ -19,3 +21,4 @@ class DispatchResponse(BaseModel):
     transcript: str
     turn: Optional[ConversationTurnResponse] = None
     practice_mode: Optional[PracticeMode] = None
+    device_message: Optional[str] = None

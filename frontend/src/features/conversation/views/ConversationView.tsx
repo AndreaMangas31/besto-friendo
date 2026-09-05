@@ -92,6 +92,19 @@ export function ConversationView() {
         return;
       }
 
+      if (result.command === "tv_power_on" || result.command === "tv_power_off") {
+        const heard = result.transcript ? ` Te oí: “${result.transcript}”.` : "";
+        setHint(
+          `${
+            result.device_message
+            ?? (result.command === "tv_power_on"
+              ? "Mandé despertar la tele."
+              : "Intenté apagar la tele.")
+          }${heard}`,
+        );
+        return;
+      }
+
       if (result.command === "japanese_turn" && result.turn) {
         const turn = result.turn;
         setMessages((current) => [
@@ -173,11 +186,12 @@ export function ConversationView() {
               isSending={isSending}
               recorderError={recorder.errorMessage}
               dispatchError={dispatcher.errorMessage}
+              notice={hint}
               onTalk={talk}
               onReplay={speech.speakJapanese}
             />
             <p className="mt-2 px-1 text-xs text-zinc-400">
-              También puedes decir “disable japanese mode” o “modo corregir”.
+              También: disable japanese mode, modo corregir, o enciende/apaga la tele.
             </p>
           </div>
         ) : null}

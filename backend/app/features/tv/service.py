@@ -1,9 +1,12 @@
+import asyncio
 import itertools
 import logging
 import time
+from pathlib import Path
 from typing import List, Optional, Tuple
 
 import pychromecast
+from androidtvremote2 import AndroidTVRemote, CannotConnect, ConnectionClosed, InvalidAuth
 
 from app.core.config import settings
 from app.features.tv.models import TvActionResult, TvCastDevice, TvCastList
@@ -21,6 +24,16 @@ _WAKE_IMAGES = (
     "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/TearsOfSteel.jpg",
 )
 _wake_seq = itertools.count()
+
+# Mando Google TV. Los .pem no se commitean.
+_CERT_DIR = Path(__file__).resolve().parents[3] / ".androidtv"
+_CERTFILE = _CERT_DIR / "cert.pem"
+_KEYFILE = _CERT_DIR / "key.pem"
+_PAIR_HINT = (
+    "Tele encendida, POST http://127.0.0.1:8000/tv/pair/start "
+    "y el PIN de 6 dígitos a POST /tv/pair/finish {\"pin\":\"123456\"}."
+)
+_pairing_remote: Optional[AndroidTVRemote] = None
 
 
 def _next_wake_media() -> Tuple[str, str]:
@@ -112,6 +125,37 @@ def list_casts() -> TvCastList:
         _stop_browser(browser)
 
 
+def _cast_host(cast: pychromecast.Chromecast) -> str:
+    info = getattr(cast, "cast_info", None)
+    return str(getattr(info, "host", None) or getattr(cast, "host", None) or "")
+
+
+def _resolve_target() -> Tuple[str, str, str]:
+    chromecasts, browser = _discover()
+    try:
+        cast, error = _pick_cast(chromecasts)
+        if error or cast is None:
+            return "", "", error
+        host = _cast_host(cast)
+        name = _cast_name(cast)
+        if not host:
+            return name, "", f"Vi {name} pero sin IP."
+        return name, host, ""
+    finally:
+        _stop_browser(browser)
+
+
+def _new_remote(host: str) -> AndroidTVRemote:
+    _CERT_DIR.mkdir(parents=True, exist_ok=True)
+    return AndroidTVRemote(
+        "besto-friendo",
+        str(_CERTFILE),
+        str(_KEYFILE),
+        host,
+        enable_ime=False,
+    )
+
+
 def _with_cast() -> Tuple[Optional[pychromecast.Chromecast], Optional[object], str]:
     chromecasts, browser = _discover()
     cast, error = _pick_cast(chromecasts)
@@ -158,28 +202,110 @@ def power_on() -> TvActionResult:
         _stop_browser(browser)
 
 
-def power_off() -> TvActionResult:
-    cast, browser, error = _with_cast()
-    if error or cast is None:
+async def pair_start() -> TvActionResult:
+    global _pairing_remote
+    name, host, error = await asyncio.to_thread(_resolve_target)
+    if error:
         return TvActionResult(ok=False, message=error)
 
-    name = _cast_name(cast)
+    remote = _new_remote(host)
+    await remote.async_generate_cert_if_missing()
     try:
-        cast.wait(timeout=10)
-        cast.quit_app()
-        logger.info("Cast quit_app ok name=%s", name)
+        await remote.async_start_pairing()
+    except CannotConnect as exc:
+        logger.info("Pairing no conectó name=%s host=%s err=%s", name, host, exc)
         return TvActionResult(
             ok=False,
-            message=(
-                f"Cerré Cast en {name}. Chromecast casi nunca apaga la tele de verdad; "
-                "usa el mando si sigue encendida."
-            ),
+            message=f"No pude abrir pairing con {name} ({host}): {exc}",
         )
+    except ConnectionClosed as exc:
+        logger.info("Pairing se cerró name=%s err=%s", name, exc)
+        return TvActionResult(
+            ok=False,
+            message=f"La tele cerró el pairing de {name}. Reintenta start.",
+        )
+
+    _pairing_remote = remote
+    logger.info("Pairing start ok name=%s host=%s", name, host)
+    return TvActionResult(
+        ok=True,
+        message=(
+            f"Emparejando {name}. PIN de 6 dígitos en la tele, "
+            'luego POST /tv/pair/finish {"pin":"123456"}.'
+        ),
+    )
+
+
+async def pair_finish(pin: str) -> TvActionResult:
+    global _pairing_remote
+    remote = _pairing_remote
+    if remote is None:
+        return TvActionResult(
+            ok=False,
+            message="No hay pairing abierto. POST /tv/pair/start primero.",
+        )
+
+    code = pin.strip().replace(" ", "")
+    try:
+        await remote.async_finish_pairing(code)
+    except InvalidAuth:
+        logger.info("Pairing PIN inválido")
+        return TvActionResult(ok=False, message="PIN incorrecto. Míralo otra vez en la tele.")
+    except ConnectionClosed:
+        _pairing_remote = None
+        logger.info("Pairing cerrado antes de finish")
+        return TvActionResult(
+            ok=False,
+            message="Se cerró el pairing. POST /tv/pair/start otra vez.",
+        )
+
+    _pairing_remote = None
+    logger.info("Pairing finish ok")
+    return TvActionResult(ok=True, message="Emparejado. Ya puedes decir apaga la tele.")
+
+
+async def power_off() -> TvActionResult:
+    name, host, error = await asyncio.to_thread(_resolve_target)
+    if error:
+        return TvActionResult(ok=False, message=error)
+
+    remote = _new_remote(host)
+    await remote.async_generate_cert_if_missing()
+    try:
+        await remote.async_connect()
+    except InvalidAuth:
+        logger.info("Android TV sin pairing name=%s host=%s", name, host)
+        return TvActionResult(
+            ok=False,
+            message=f"{name} no está emparejada. {_PAIR_HINT}",
+        )
+    except CannotConnect as exc:
+        logger.info("Android TV mando no conectó name=%s host=%s err=%s", name, host, exc)
+        return TvActionResult(
+            ok=False,
+            message=f"No conecté el mando a {name} ({host}): {exc}",
+        )
+
+    try:
+        sent = "SLEEP"
+        try:
+            remote.send_key_command("SLEEP")
+        except ValueError:
+            remote.send_key_command("POWER")
+            sent = "POWER"
+        await asyncio.sleep(0.8)
+        # SLEEP a veces no hace nada; POWER en Android TV suele ser standby (toggle).
+        if remote.is_on:
+            remote.send_key_command("POWER")
+            sent = "POWER"
+            await asyncio.sleep(0.4)
+        logger.info("Android TV off key=%s name=%s host=%s", sent, name, host)
+        return TvActionResult(ok=True, message=f"Mandé apagar {name}.")
+    except ConnectionClosed as exc:
+        logger.info("Android TV off sin conexión name=%s err=%s", name, exc)
+        return TvActionResult(ok=False, message=f"Se cortó el mando con {name}: {exc}")
     except Exception as exc:
-        logger.exception("Cast quit falló name=%s", name)
-        return TvActionResult(
-            ok=False,
-            message=f"No pude hablar con {name} para apagar: {exc}",
-        )
+        logger.exception("Android TV off falló name=%s", name)
+        return TvActionResult(ok=False, message=f"Conecté a {name} pero no pude apagar: {exc}")
     finally:
-        _stop_browser(browser)
+        remote.disconnect()

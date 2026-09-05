@@ -16,6 +16,8 @@ build/
 .env.*
 !.env.example
 
+.androidtv/*.pem
+
 .DS_Store
 uploads/
 tmp/

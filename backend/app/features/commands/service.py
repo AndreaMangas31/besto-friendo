@@ -189,9 +189,17 @@ async def dispatch(
         turn = await run_turn_from_text(transcript, history_json, mode)
         return DispatchResponse(command=command, transcript=transcript, turn=turn)
 
-    if command in ("tv_power_on", "tv_power_off"):
-        action = tv_power_on if command == "tv_power_on" else tv_power_off
-        result = await asyncio.to_thread(action)
+    if command == "tv_power_on":
+        result = await asyncio.to_thread(tv_power_on)
+        logger.info("TV command=%s ok=%s message=%s", command, result.ok, result.message)
+        return DispatchResponse(
+            command=command,
+            transcript=transcript,
+            device_message=result.message,
+        )
+
+    if command == "tv_power_off":
+        result = await tv_power_off()
         logger.info("TV command=%s ok=%s message=%s", command, result.ok, result.message)
         return DispatchResponse(
             command=command,

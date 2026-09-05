@@ -1,9 +1,46 @@
+# OS
 .DS_Store
+Thumbs.db
+
+# Secrets — never commit real keys (GROQ_API_KEY, etc.)
+.env
+.env.*
+!.env.example
+!.env.local.example
+
+# Python
 .venv/
-**/__pycache__/
+venv/
+__pycache__/
 *.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# Node / Next
 node_modules/
 .next/
-.env
-.env.local
+out/
+*.tsbuildinfo
+
+# Logs
+*.log
+.pnpm-debug.log*
+npm-debug.log*
+
+# Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Local dumps (audio, uploads)
+uploads/
+tmp/
 *.pem

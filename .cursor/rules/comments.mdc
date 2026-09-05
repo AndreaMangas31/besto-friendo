@@ -1,0 +1,29 @@
+---
+description: Comentar el código para depurar y entender el porqué
+alwaysApply: true
+---
+
+# Comentarios
+
+Comenta código nuevo y el que toques. El objetivo es depurar más tarde, no narrar lo obvio.
+
+## Qué sí
+
+- **Por qué**, no el qué: MIME Safari vs Chrome, no poner `Content-Type` en FormData, nombre del campo `audio`, CORS vs `FRONTEND_ORIGIN`.
+- Fallos típicos junto al código: 422, blob de 0 bytes, 503 sin `GROQ_API_KEY`, permiso de micrófono solo en localhost/https.
+- Logs en backend en puntos de I/O (audio recibido, STT, turno listo) con `filename`, tamaños, recuentos.
+
+## Qué no
+
+- No comentes cada línea (`i++`, getters).
+- No dejes comentarios que mientan tras un refactor: actualízalos o bórralos.
+- Comentarios en el mismo idioma que el resto del archivo (español en este repo).
+
+```python
+# ❌ BAD
+payload = await audio.read()  # lee el audio
+
+# ✅ GOOD
+# Solo en memoria. size_bytes 0 = el navegador mandó un blob vacío.
+payload = await audio.read()
+```

@@ -1,0 +1,33 @@
+---
+description: Cómo crecer el frontend (features, hooks, vistas)
+globs: frontend/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Frontend
+
+Next.js App Router + TypeScript + Tailwind. Gestor: pnpm.
+
+## Dónde va cada cosa
+
+- `src/app`: solo `layout`, `page` y estilos globales. `page.tsx` importa una view de feature.
+- Feature nueva: `src/features/<nombre>/{views,components,hooks,types}`.
+- Reutilizado en dos features → `src/shared`. Nunca `home` importa `conversation`.
+
+## Componentes vs hooks vs views
+
+- **View:** pantalla y orquestación (`if` grabando → stop y envío).
+- **Component:** UI tonta (botón, lista). Props claras, poco estado.
+- **Hook:** MediaRecorder, fetch, `speechSynthesis`. No pongas `getUserMedia` en la view.
+
+`"use client"` solo donde hay estado, efectos o APIs del navegador.
+
+## Datos y API
+
+- URL del backend: `shared/config/env.ts` (`NEXT_PUBLIC_API_URL`).
+- Fetch: `shared/api/client.ts`. No pongas `Content-Type` en `FormData`.
+- Tipos de la feature en `features/<x>/types`. El historial de chat vive en estado de la view (se pierde al recargar a propósito).
+
+## UI
+
+Tailwind. Estados visibles: loading, error de micro, error de red/503, lista vacía. No añadas librerías de UI sin pedirlo.

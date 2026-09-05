@@ -50,4 +50,14 @@ Si el backend está parado, la página debe mostrar un error claro de conexión.
 
 ## Fase 2
 
-Grabar audio en el navegador y enviarlo a `POST /conversation/audio`. El backend responde con metadatos (tamaño y tipo MIME). Todavía no hay IA.
+Grabar audio en el navegador y enviarlo a `POST /conversation/audio`.
+
+## Fase 3
+
+Turno con IA: `POST /conversation/turn` (Groq Whisper + chat). La respuesta se lee en el navegador (`ja-JP`).
+
+1. Crea una API key en https://console.groq.com/keys (gratis; no es ChatGPT).
+2. En `backend/.env`: `GROQ_API_KEY=gsk_...`
+3. Reinicia uvicorn e instala deps si hace falta: `pip install -r requirements.txt`
+
+Si falta la key, el backend responde 503.

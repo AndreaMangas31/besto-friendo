@@ -10,16 +10,31 @@ export class ApiError extends Error {
   }
 }
 
+async function readErrorMessage(response: Response): Promise<string> {
+  try {
+    const body: unknown = await response.json();
+    if (
+      body &&
+      typeof body === "object" &&
+      "detail" in body &&
+      typeof body.detail === "string"
+    ) {
+      return body.detail;
+    }
+  } catch {
+    // cuerpo no JSON
+  }
+
+  return `El backend respondió con ${response.status}`;
+}
+
 export async function apiGet<T>(path: string): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     cache: "no-store",
   });
 
   if (!response.ok) {
-    throw new ApiError(
-      `El backend respondió con ${response.status}`,
-      response.status,
-    );
+    throw new ApiError(await readErrorMessage(response), response.status);
   }
 
   return response.json() as Promise<T>;
@@ -35,10 +50,7 @@ export async function apiPostForm<T>(path: string, formData: FormData): Promise<
   });
 
   if (!response.ok) {
-    throw new ApiError(
-      `El backend respondió con ${response.status}`,
-      response.status,
-    );
+    throw new ApiError(await readErrorMessage(response), response.status);
   }
 
   return response.json() as Promise<T>;

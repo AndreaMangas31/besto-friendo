@@ -7,5 +7,11 @@ class Settings(BaseSettings):
     app_name: str = "besto-friendo"
     frontend_origin: str = "http://localhost:3000"
 
+    # groq | (más adelante openai, etc.). La key NUNCA va al frontend.
+    ai_provider: str = "groq"
+    groq_api_key: str = ""
+    groq_stt_model: str = "whisper-large-v3-turbo"
+    groq_chat_model: str = "openai/gpt-oss-120b"
+
 
 settings = Settings()

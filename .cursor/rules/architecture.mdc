@@ -1,0 +1,32 @@
+---
+description: Arquitectura feature-based del monorepo (Next.js + FastAPI)
+alwaysApply: true
+---
+
+# Arquitectura
+
+Monorepo: `frontend/` (Next.js) y `backend/` (FastAPI). La API key de IA solo vive en el backend.
+
+## Capas
+
+- **Ensamblador, sin negocio:** `frontend/src/app` (rutas) y `backend/app/main.py` (routers, CORS).
+- **Feature:** una carpeta por capacidad. No importes una feature desde otra. Si hace falta compartir, sube a `shared`.
+- **Backend `core/`:** settings y arranque. No es dominio.
+- **Backend `shared/`:** helpers entre features (p. ej. `AiProvider`).
+- **Frontend `shared/`:** `api`, `config`, `components`, `hooks`, `utils`, `types`.
+
+## Plantilla frontend por feature
+
+`views/` (pantalla), `components/`, `hooks/`, `types/`.
+
+La vista orquesta (clic, estado de UI). El hook encapsula APIs del navegador o fetch.
+
+## Plantilla backend por feature
+
+`controller.py` (HTTP), `service.py` (lógica), `models.py` (Pydantic).
+
+El controller no llama a Groq ni a prompts. Conversation orquesta; japanese es el cerebro del tutor; `shared/ai` es el proveedor.
+
+## Evolución
+
+No crees features vacías. No añadas auth, DB, memoria persistente, agentes ni tools hasta que se pida. Iteraciones pequeñas; no avances de fase sin confirmación.

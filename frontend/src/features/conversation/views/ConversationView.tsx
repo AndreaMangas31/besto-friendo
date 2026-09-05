@@ -1,21 +1,64 @@
 "use client";
 
 import { useState } from "react";
-import { MessageList } from "@/features/conversation/components/MessageList";
+import { ChatPanel } from "@/features/conversation/components/ChatPanel";
 import { TalkButton } from "@/features/conversation/components/TalkButton";
+import { TutorStage } from "@/features/conversation/components/TutorStage";
 import { useAudioRecorder } from "@/features/conversation/hooks/useAudioRecorder";
-import { useSendTurn } from "@/features/conversation/hooks/useSendTurn";
+import { useDispatchCommand } from "@/features/conversation/hooks/useDispatchCommand";
 import { useSpeechPlayback } from "@/features/conversation/hooks/useSpeechPlayback";
-import type { ChatMessage } from "@/features/conversation/types/turn";
+import type { ChatMessage, PracticeMode } from "@/features/conversation/types/turn";
+
+const GREETING: ChatMessage = {
+  role: "assistant",
+  text: "Hola. Soy tu tutor de japonés. Dime algo y practicamos.",
+  blocks: [
+    {
+      type: "text",
+      text: "Hola. Soy tu tutor de japonés. Dime algo y practicamos.",
+    },
+  ],
+};
+
+const MODE_LABEL: Record<PracticeMode, string> = {
+  conversar: "Conversar",
+  corregir: "Corregir",
+  ideas: "Darme ideas",
+};
+
+function modeNotice(mode: PracticeMode): ChatMessage {
+  return {
+    role: "assistant",
+    text: `Vale, pasamos a ${MODE_LABEL[mode]}.`,
+    blocks: [{ type: "text", text: `Vale, pasamos a ${MODE_LABEL[mode]}.` }],
+  };
+}
 
 export function ConversationView() {
   const recorder = useAudioRecorder();
-  const sender = useSendTurn();
+  const dispatcher = useDispatchCommand();
   const speech = useSpeechPlayback();
+  const [japaneseEnabled, setJapaneseEnabled] = useState(false);
+  const [mode, setMode] = useState<PracticeMode>("conversar");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [hint, setHint] = useState<string | null>(null);
 
   const isRecording = recorder.status === "recording";
-  const isSending = sender.status === "sending";
+  const isSending = dispatcher.status === "sending";
+
+  function openJapaneseChat() {
+    setJapaneseEnabled(true);
+    setHint(null);
+    setMessages((current) => (current.length === 0 ? [GREETING] : current));
+  }
+
+  function closeJapaneseChat() {
+    speech.cancel();
+    setJapaneseEnabled(false);
+    setMessages([]);
+    setMode("conversar");
+    setHint(null);
+  }
 
   async function handleTalkClick() {
     if (isSending) {
@@ -24,25 +67,54 @@ export function ConversationView() {
 
     if (isRecording) {
       const file = await recorder.stop();
-      if (file) {
-        const turn = await sender.send(file, messages);
-        if (turn) {
-          setMessages((current) => [
-            ...current,
-            { role: "user", text: turn.user_text },
-            {
-              role: "assistant",
-              text: turn.assistant_text,
-              speak: turn.speak || turn.assistant_text,
-              blocks: turn.blocks,
-            },
-          ]);
-          // TTS solo japonés (speak), nunca el romaji ni la explicación.
-          if (turn.speak || turn.assistant_text) {
-            speech.speakJapanese(turn.speak || turn.assistant_text);
-          }
-        }
+      if (!file) {
+        return;
       }
+
+      const result = await dispatcher.send(file, messages, japaneseEnabled, mode);
+      if (!result) {
+        return;
+      }
+
+      if (result.command === "enable_japanese_mode") {
+        openJapaneseChat();
+        return;
+      }
+
+      if (result.command === "disable_japanese_mode") {
+        closeJapaneseChat();
+        return;
+      }
+
+      if (result.command === "set_practice_mode" && result.practice_mode) {
+        setMode(result.practice_mode);
+        setMessages((current) => [...current, modeNotice(result.practice_mode!)]);
+        return;
+      }
+
+      if (result.command === "japanese_turn" && result.turn) {
+        const turn = result.turn;
+        setMessages((current) => [
+          ...current,
+          { role: "user", text: turn.user_text },
+          {
+            role: "assistant",
+            text: turn.assistant_text,
+            speak: turn.speak || turn.assistant_text,
+            blocks: turn.blocks,
+          },
+        ]);
+        if (turn.speak) {
+          speech.speakJapanese(turn.speak);
+        }
+        return;
+      }
+
+      setHint(
+        result.transcript
+          ? `No encajó como comando de activar. Te oí algo como: “${result.transcript}”.`
+          : "No encajó como comando. Di enable japanese mode, más o menos.",
+      );
       return;
     }
 
@@ -50,56 +122,66 @@ export function ConversationView() {
     await recorder.start();
   }
 
+  const talk = () => {
+    void handleTalkClick();
+  };
+
   return (
-    <div className="flex flex-1 flex-col items-center justify-center bg-zinc-50 px-6 py-10">
-      <main className="w-full max-w-lg space-y-6 rounded-2xl bg-white p-8 shadow-sm">
-        <div className="space-y-2">
-          <p className="text-sm font-medium tracking-wide text-zinc-500 uppercase">
-            Fase 3
-          </p>
-          <h1 className="text-3xl font-semibold tracking-tight text-zinc-950">
-            Besto Friendo
-          </h1>
-          <p className="text-zinc-600">
-            Habla en japonés, castellano o inglés. El japonés se muestra con
-            romaji encima; la voz lee solo el japonés.
-          </p>
+    <div className="flex flex-1 flex-col bg-[#fbf7f2] text-zinc-900">
+      <div
+        className={`mx-auto flex w-full flex-1 flex-col ${
+          japaneseEnabled ? "max-w-6xl md:flex-row" : "max-w-xl"
+        }`}
+      >
+        <div className={japaneseEnabled ? "md:w-[42%]" : "flex-1"}>
+          <TutorStage
+            japaneseEnabled={japaneseEnabled}
+            mode={mode}
+            onModeChange={setMode}
+          />
+
+          {!japaneseEnabled ? (
+            <div className="space-y-3 px-6 pb-10">
+              <TalkButton
+                isRecording={isRecording}
+                disabled={isSending}
+                onClick={talk}
+              />
+              {isSending ? (
+                <p className="text-center text-sm text-zinc-500">Escuchando el comando…</p>
+              ) : null}
+              {hint ? <p className="text-center text-sm text-zinc-600">{hint}</p> : null}
+              {recorder.errorMessage ? (
+                <p className="text-center text-sm text-red-700" role="alert">
+                  {recorder.errorMessage}
+                </p>
+              ) : null}
+              {dispatcher.errorMessage ? (
+                <p className="text-center text-sm text-red-700" role="alert">
+                  {dispatcher.errorMessage}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
         </div>
 
-        <MessageList messages={messages} />
-
-        <TalkButton
-          isRecording={isRecording}
-          disabled={isSending}
-          onClick={() => {
-            void handleTalkClick();
-          }}
-        />
-
-        {isSending ? (
-          <p className="text-zinc-500">Transcribiendo y pensando…</p>
-        ) : null}
-
-        {recorder.errorMessage ? (
-          <div
-            className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-800"
-            role="alert"
-          >
-            <p className="font-medium">No se pudo grabar</p>
-            <p className="mt-1 text-sm">{recorder.errorMessage}</p>
+        {japaneseEnabled ? (
+          <div className="flex flex-1 flex-col p-4 md:p-6">
+            <ChatPanel
+              messages={messages}
+              isRecording={isRecording}
+              isSending={isSending}
+              recorderError={recorder.errorMessage}
+              dispatchError={dispatcher.errorMessage}
+              onTalk={talk}
+              onReplay={speech.speakJapanese}
+            />
+            <p className="mt-2 px-1 text-xs text-zinc-400">
+              También puedes decir “disable japanese mode” o “modo corregir”.
+            </p>
           </div>
         ) : null}
-
-        {sender.errorMessage ? (
-          <div
-            className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-800"
-            role="alert"
-          >
-            <p className="font-medium">No se pudo completar el turno</p>
-            <p className="mt-1 text-sm">{sender.errorMessage}</p>
-          </div>
-        ) : null}
-      </main>
+      </div>
     </div>
   );
 }

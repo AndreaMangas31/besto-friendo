@@ -3,6 +3,7 @@ import type { ChatMessage, ContentBlock } from "@/features/conversation/types/tu
 
 type MessageListProps = {
   messages: ChatMessage[];
+  onReplay?: (speak: string) => void;
 };
 
 function AssistantBlocks({ blocks, speak }: { blocks: ContentBlock[]; speak?: string }) {
@@ -27,36 +28,55 @@ function AssistantBlocks({ blocks, speak }: { blocks: ContentBlock[]; speak?: st
   );
 }
 
-export function MessageList({ messages }: MessageListProps) {
-  if (messages.length === 0) {
-    return (
-      <p className="text-sm text-zinc-500">
-        Pulsa Hablar para empezar. La conversación de esta pestaña no se guarda.
-      </p>
-    );
-  }
-
+export function MessageList({ messages, onReplay }: MessageListProps) {
   return (
-    <ul className="max-h-80 space-y-3 overflow-y-auto">
-      {messages.map((message, index) => (
-        <li
-          key={`${message.role}-${index}`}
-          className={`rounded-lg px-3 py-2 text-sm ${
-            message.role === "user"
-              ? "bg-zinc-100 text-zinc-900"
-              : "bg-emerald-50 text-emerald-950"
-          }`}
-        >
-          <p className="text-xs font-medium tracking-wide uppercase text-zinc-500">
-            {message.role === "user" ? "Tú" : "Tutor"}
-          </p>
-          {message.role === "assistant" ? (
-            <AssistantBlocks blocks={message.blocks ?? []} speak={message.speak} />
-          ) : (
-            <p className="mt-1 whitespace-pre-wrap">{message.text}</p>
-          )}
-        </li>
-      ))}
+    <ul className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-1 py-2">
+      {messages.map((message, index) => {
+        const isUser = message.role === "user";
+        const canReplay = !isUser && Boolean(message.speak?.trim());
+
+        return (
+          <li
+            key={`${message.role}-${index}`}
+            className={`flex ${isUser ? "justify-end" : "justify-start"}`}
+          >
+            <div
+              className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${
+                isUser
+                  ? "rounded-br-md bg-zinc-900 text-white"
+                  : "rounded-bl-md bg-white text-zinc-900 shadow-sm ring-1 ring-zinc-100"
+              }`}
+            >
+              {isUser ? (
+                <p className="whitespace-pre-wrap">{message.text}</p>
+              ) : (
+                <>
+                  <AssistantBlocks blocks={message.blocks ?? []} speak={message.speak} />
+                  {canReplay && onReplay ? (
+                    <button
+                      type="button"
+                      className="mt-2 text-zinc-400 hover:text-zinc-700"
+                      aria-label="Repetir japonés"
+                      onClick={() => onReplay(message.speak ?? "")}
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M11 5 6 9H3v6h3l5 4V5Z" />
+                        <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+                      </svg>
+                    </button>
+                  ) : null}
+                </>
+              )}
+            </div>
+          </li>
+        );
+      })}
     </ul>
   );
 }

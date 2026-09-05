@@ -41,6 +41,12 @@ Rules:
 - Infer level from this message and history. Never mention you are an AI.
 """
 
+MODE_HINTS = {
+    "conversar": "Practice mode: keep a natural back-and-forth conversation.",
+    "corregir": "Practice mode: still converse, but briefly highlight one correction inside the chat.",
+    "ideas": "Practice mode: suggest a topic or phrase they can try next, then keep chatting.",
+}
+
 
 class _LegacyPayload(BaseModel):
     """Por si Groq aún manda explanation + segments en vez de blocks."""
@@ -51,8 +57,15 @@ class _LegacyPayload(BaseModel):
     segments: List[JapaneseSegment] = Field(default_factory=list)
 
 
-def build_messages(history: List[TutorTurn], user_text: str) -> List[dict]:
+def build_messages(
+    history: List[TutorTurn],
+    user_text: str,
+    mode: Optional[str] = None,
+) -> List[dict]:
     messages: List[dict] = [{"role": "system", "content": SYSTEM_PROMPT}]
+    hint = MODE_HINTS.get((mode or "conversar").strip().lower())
+    if hint:
+        messages.append({"role": "system", "content": hint})
 
     for turn in history:
         messages.append({"role": turn.role, "content": turn.text})

@@ -1,3 +1,5 @@
+export type PracticeMode = "conversar" | "corregir" | "ideas";
+
 export type ChatRole = "user" | "assistant";
 
 export type JapaneseSegment = {
@@ -23,5 +25,3 @@ export type ConversationTurnResponse = {
   speak: string;
   blocks: ContentBlock[];
 };
-
-export type SendTurnStatus = "idle" | "sending" | "ok" | "error";

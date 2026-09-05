@@ -21,7 +21,7 @@ async def upload_audio(
 @router.post("/conversation/turn", response_model=ConversationTurnResponse)
 async def conversation_turn(
     audio: UploadFile = File(...),
-    # JSON string: [{ "role": "user"|"assistant", "text": "..." }, ...]
     history: Optional[str] = Form(None),
+    mode: Optional[str] = Form(None),
 ) -> ConversationTurnResponse:
-    return await run_turn(audio, history)
+    return await run_turn(audio, history, mode)

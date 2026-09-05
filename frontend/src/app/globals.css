@@ -24,3 +24,30 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@keyframes orb-morph {
+  0%,
+  100% {
+    border-radius: 42% 58% 40% 60% / 45% 40% 60% 55%;
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    border-radius: 60% 40% 55% 45% / 40% 55% 45% 60%;
+    transform: rotate(8deg) scale(1.04);
+  }
+}
+
+.tutor-orb {
+  background: radial-gradient(
+      55% 55% at 35% 30%,
+      #fff7ed 0%,
+      transparent 55%
+    ),
+    linear-gradient(135deg, #f9c5d1 0%, #c4b5fd 48%, #a7f3d0 100%);
+  animation: orb-morph 8s ease-in-out infinite;
+  filter: blur(0.2px);
+}
+
+.tutor-orb-active {
+  box-shadow: 0 18px 50px rgba(196, 181, 253, 0.45);
+}

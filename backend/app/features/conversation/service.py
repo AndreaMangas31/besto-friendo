@@ -61,10 +61,7 @@ def _parse_history(raw: Optional[str]) -> List[TutorTurn]:
     return parsed
 
 
-async def run_turn(
-    audio: UploadFile,
-    history_json: Optional[str],
-) -> ConversationTurnResponse:
+async def transcribe_upload(audio: UploadFile) -> str:
     try:
         provider = get_ai_provider()
     except AiNotConfiguredError as exc:
@@ -76,22 +73,39 @@ async def run_turn(
 
     filename = audio.filename or "recording.webm"
     content_type = audio.content_type or "application/octet-stream"
-    history = _parse_history(history_json)
-
-    logger.info("Turno STT filename=%s bytes=%s history=%s", filename, len(payload), len(history))
 
     try:
         user_text = await provider.transcribe(payload, filename, content_type)
-        if not user_text:
-            raise HTTPException(
-                status_code=400,
-                detail="No se transcribió texto. Prueba a hablar más cerca del micrófono.",
-            )
+    except APIError as exc:
+        logger.exception("Error de Groq en STT")
+        raise HTTPException(
+            status_code=502,
+            detail=f"Groq no pudo transcribir: {exc}",
+        ) from exc
 
-        messages = build_messages(history, user_text)
+    if not user_text:
+        raise HTTPException(
+            status_code=400,
+            detail="No se transcribió texto. Prueba a hablar más cerca del micrófono.",
+        )
+    return user_text
+
+
+async def run_turn_from_text(
+    user_text: str,
+    history_json: Optional[str],
+    mode: Optional[str] = None,
+) -> ConversationTurnResponse:
+    try:
+        provider = get_ai_provider()
+    except AiNotConfiguredError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    history = _parse_history(history_json)
+    messages = build_messages(history, user_text, mode)
+
+    try:
         raw_reply = await provider.complete(messages)
-    except HTTPException:
-        raise
     except APIError as exc:
         logger.exception("Error de Groq")
         raise HTTPException(
@@ -103,10 +117,11 @@ async def run_turn(
     assistant_text = flatten_blocks(reply.blocks) or reply.speak or raw_reply
 
     logger.info(
-        "Turno listo user_chars=%s speak_chars=%s blocks=%s",
+        "Turno listo user_chars=%s speak_chars=%s blocks=%s mode=%s",
         len(user_text),
         len(reply.speak),
         len(reply.blocks),
+        mode,
     )
 
     return ConversationTurnResponse(
@@ -115,3 +130,12 @@ async def run_turn(
         speak=reply.speak,
         blocks=reply.blocks,
     )
+
+
+async def run_turn(
+    audio: UploadFile,
+    history_json: Optional[str],
+    mode: Optional[str] = None,
+) -> ConversationTurnResponse:
+    user_text = await transcribe_upload(audio)
+    return await run_turn_from_text(user_text, history_json, mode)

@@ -28,6 +28,22 @@ export type DispatchResponse = {
 
 export type DispatchStatus = "idle" | "sending" | "ok" | "error";
 
+export type CommandHelpGroup = "tutor" | "tv";
+
+export type CommandHelpId = Exclude<CommandName, "japanese_turn" | "unknown">;
+
+export type CommandHelpItem = {
+  id: CommandHelpId;
+  title: string;
+  example: string;
+  description: string;
+  group: CommandHelpGroup;
+};
+
+export type CommandCatalogResponse = {
+  items: CommandHelpItem[];
+};
+
 export const TV_COMMANDS: ReadonlySet<CommandName> = new Set([
   "tv_power_on",
   "tv_power_off",

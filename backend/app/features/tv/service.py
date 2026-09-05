@@ -330,7 +330,32 @@ async def mute() -> TvActionResult:
 
 
 async def home() -> TvActionResult:
-    return await send_key("HOME", 1, "ir al inicio")
+    # La pantalla del encendido (apps, recomendaciones). No YouTube.
+    # Un solo HOME a veces lo traga la app; el intent HOME refuerza el launcher.
+    remote, name, error = await _connect_remote()
+    if error or remote is None:
+        return TvActionResult(ok=False, message=error)
+
+    try:
+        remote.send_key_command("HOME")
+        await asyncio.sleep(0.35)
+        remote.send_key_command("HOME")
+        await asyncio.sleep(0.15)
+        remote.send_launch_app_command(
+            "intent:#Intent;action=android.intent.action.MAIN;"
+            "category=android.intent.category.HOME;end"
+        )
+        await asyncio.sleep(0.25)
+        logger.info("Android TV launcher home name=%s", name)
+        return TvActionResult(ok=True, message=f"Mandé el inicio de apps de {name}.")
+    except ConnectionClosed as exc:
+        logger.info("Android TV home sin conexión name=%s err=%s", name, exc)
+        return TvActionResult(ok=False, message=f"Se cortó el mando con {name}: {exc}")
+    except Exception as exc:
+        logger.exception("Android TV home falló name=%s", name)
+        return TvActionResult(ok=False, message=f"Conecté a {name} pero no pude ir al inicio: {exc}")
+    finally:
+        remote.disconnect()
 
 
 async def back() -> TvActionResult:

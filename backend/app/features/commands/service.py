@@ -222,10 +222,16 @@ def _is_tv_mute(compact: str) -> bool:
 
 
 def _is_tv_home(compact: str) -> bool:
+    # Inicio de la tele (apps). YouTube se abre con “abre youtube”.
+    blob = _collapsed(compact).replace("ú", "u").replace("é", "e")
+    has_menu = "menu" in blob
+    if has_menu and any(
+        token in blob for token in ("vuelve", "volver", "almenu", "elmenu")
+    ):
+        return True
     if not _has_tv_surface(compact):
         return False
-    blob = _collapsed(compact)
-    return any(token in blob for token in ("home", "inicio", "menuprincipal"))
+    return has_menu or any(token in blob for token in ("home", "inicio", "menuprincipal"))
 
 
 def _is_tv_back(compact: str) -> bool:

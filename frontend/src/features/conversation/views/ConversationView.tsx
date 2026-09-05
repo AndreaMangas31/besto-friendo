@@ -186,10 +186,6 @@ export function ConversationView() {
               onTalk={talk}
               onReplay={speech.speakJapanese}
             />
-            <p className="mt-2 px-1 text-xs text-zinc-400">
-              También: disable japanese mode, modo corregir, o controla la tele
-              (volumen, pausa, YouTube). Para buscar en YouTube: ok tele y el texto.
-            </p>
           </div>
         ) : null}
       </div>

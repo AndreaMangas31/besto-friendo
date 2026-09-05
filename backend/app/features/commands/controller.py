@@ -2,10 +2,16 @@ from typing import Optional
 
 from fastapi import APIRouter, File, Form, UploadFile
 
-from app.features.commands.models import DispatchResponse
+from app.features.commands.catalog import get_catalog
+from app.features.commands.models import CommandCatalogResponse, DispatchResponse
 from app.features.commands.service import dispatch
 
 router = APIRouter()
+
+
+@router.get("/commands/catalog", response_model=CommandCatalogResponse)
+def command_catalog() -> CommandCatalogResponse:
+    return get_catalog()
 
 
 @router.post("/commands/dispatch", response_model=DispatchResponse)

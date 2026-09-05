@@ -1,0 +1,34 @@
+---
+description: Al añadir un comando de voz, actualizar el catálogo de ayuda
+globs: backend/app/features/commands/**/*.py,frontend/src/features/conversation/types/commands.ts
+alwaysApply: false
+---
+
+# Catálogo de comandos
+
+Si añades o cambias un comando de voz, el menú de la **i** debe enterarse. Fuente de verdad: [`backend/app/features/commands/catalog.py`](backend/app/features/commands/catalog.py) (`GET /commands/catalog`). El frontend no hardcodea la lista.
+
+## Checklist (mismo cambio)
+
+1. Detector en `service.py` (`detect_command` / `_detect_tv_command`).
+2. `CommandName` en `backend/.../commands/models.py` y `frontend/.../types/commands.ts`.
+3. Si dispara la tele: `TV_COMMANDS` y el `if` en `dispatch`.
+4. **Entrada en `CATALOG`**: `id`, título, ejemplo que el detector acepte, descripción de una línea, `group` (`tutor` | `tv`).
+5. `CommandHelpId` en el backend (mismo `id` que el catálogo).
+
+No pongas `japanese_turn` ni `unknown` en el catálogo: no son frases que el usuario dispare.
+
+```python
+# ❌ BAD: comando nuevo solo en service.py
+if _is_tv_open_spotify(compact):
+    return "tv_open_spotify"
+
+# ✅ GOOD: detector + CATALOG (y tipos)
+CommandHelpItem(
+    id="tv_open_spotify",
+    title="Abrir Spotify",
+    example="abre spotify",
+    description="Lanza Spotify en la tele.",
+    group="tv",
+)
+```

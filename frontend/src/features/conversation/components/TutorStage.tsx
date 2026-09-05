@@ -22,7 +22,7 @@ export function TutorStage({
         <p className="max-w-sm text-zinc-600">
           {japaneseEnabled
             ? "Tutor de japonés. Habla o cambia de modo con la voz o los botones."
-            : "Di algo como enable japanese mode para abrir el chat. No hace falta que sea literal."}
+            : "Di enable japanese mode para abrir el chat, o controla la tele. Para buscar en YouTube: ok tele y el texto."}
         </p>
       </div>
 

@@ -4,6 +4,7 @@ import logging
 import time
 from pathlib import Path
 from typing import List, Optional, Tuple
+from urllib.parse import quote_plus
 
 import pychromecast
 from androidtvremote2 import AndroidTVRemote, CannotConnect, ConnectionClosed, InvalidAuth
@@ -33,6 +34,11 @@ _PAIR_HINT = (
     "Tele encendida, POST http://127.0.0.1:8000/tv/pair/start "
     "y el PIN de 6 dígitos a POST /tv/pair/finish {\"pin\":\"123456\"}."
 )
+# 0.0.x manda el string tal cual; un package sin esquema no abre nada.
+_YOUTUBE_LINK = "https://www.youtube.com"
+_NETFLIX_LINK = "https://www.netflix.com"
+# Un tap de VOLUME_* apenas se nota; varios imitan “sube/baja un poco”.
+_VOLUME_REPEATS = 5
 _pairing_remote: Optional[AndroidTVRemote] = None
 
 
@@ -264,10 +270,11 @@ async def pair_finish(pin: str) -> TvActionResult:
     return TvActionResult(ok=True, message="Emparejado. Ya puedes decir apaga la tele.")
 
 
-async def power_off() -> TvActionResult:
+async def _connect_remote() -> Tuple[Optional[AndroidTVRemote], str, str]:
+    # Misma sesión TLS que el pairing. Sin certs o PIN, InvalidAuth.
     name, host, error = await asyncio.to_thread(_resolve_target)
     if error:
-        return TvActionResult(ok=False, message=error)
+        return None, "", error
 
     remote = _new_remote(host)
     await remote.async_generate_cert_if_missing()
@@ -275,16 +282,111 @@ async def power_off() -> TvActionResult:
         await remote.async_connect()
     except InvalidAuth:
         logger.info("Android TV sin pairing name=%s host=%s", name, host)
-        return TvActionResult(
-            ok=False,
-            message=f"{name} no está emparejada. {_PAIR_HINT}",
-        )
+        return None, name, f"{name} no está emparejada. {_PAIR_HINT}"
     except CannotConnect as exc:
         logger.info("Android TV mando no conectó name=%s host=%s err=%s", name, host, exc)
+        return None, name, f"No conecté el mando a {name} ({host}): {exc}"
+    return remote, name, ""
+
+
+async def send_key(key: str, repeats: int, label: str) -> TvActionResult:
+    remote, name, error = await _connect_remote()
+    if error or remote is None:
+        return TvActionResult(ok=False, message=error)
+
+    try:
+        for index in range(max(1, repeats)):
+            remote.send_key_command(key)
+            if index + 1 < repeats:
+                await asyncio.sleep(0.08)
+        # send_key_command solo encola; si desconectamos al instante a veces no sale.
+        await asyncio.sleep(0.25)
+        logger.info("Android TV key=%s repeats=%s name=%s", key, repeats, name)
+        return TvActionResult(ok=True, message=f"Mandé {label} a {name}.")
+    except ValueError:
+        logger.info("Android TV key desconocida key=%s name=%s", key, name)
+        return TvActionResult(ok=False, message=f"La tele no admite la tecla {key}.")
+    except ConnectionClosed as exc:
+        logger.info("Android TV key sin conexión name=%s err=%s", name, exc)
+        return TvActionResult(ok=False, message=f"Se cortó el mando con {name}: {exc}")
+    except Exception as exc:
+        logger.exception("Android TV key falló key=%s name=%s", key, name)
+        return TvActionResult(ok=False, message=f"Conecté a {name} pero no pude mandar {label}: {exc}")
+    finally:
+        remote.disconnect()
+
+
+async def volume_up() -> TvActionResult:
+    return await send_key("VOLUME_UP", _VOLUME_REPEATS, "subir volumen")
+
+
+async def volume_down() -> TvActionResult:
+    return await send_key("VOLUME_DOWN", _VOLUME_REPEATS, "bajar volumen")
+
+
+async def mute() -> TvActionResult:
+    # VOLUME_MUTE es el altavoz; MUTE en Android es el micro.
+    return await send_key("VOLUME_MUTE", 1, "silenciar")
+
+
+async def home() -> TvActionResult:
+    return await send_key("HOME", 1, "ir al inicio")
+
+
+async def back() -> TvActionResult:
+    return await send_key("BACK", 1, "atrás")
+
+
+async def play_pause() -> TvActionResult:
+    return await send_key("MEDIA_PLAY_PAUSE", 1, "play/pausa")
+
+
+async def launch_app(app_link: str, label: str) -> TvActionResult:
+    remote, name, error = await _connect_remote()
+    if error or remote is None:
+        return TvActionResult(ok=False, message=error)
+
+    try:
+        remote.send_launch_app_command(app_link)
+        await asyncio.sleep(0.25)
+        logger.info("Android TV launch link=%s name=%s", app_link, name)
+        return TvActionResult(ok=True, message=f"Mandé abrir {label} en {name}.")
+    except ConnectionClosed as exc:
+        logger.info("Android TV launch sin conexión name=%s err=%s", name, exc)
+        return TvActionResult(ok=False, message=f"Se cortó el mando con {name}: {exc}")
+    except Exception as exc:
+        logger.exception("Android TV launch falló link=%s name=%s", app_link, name)
         return TvActionResult(
             ok=False,
-            message=f"No conecté el mando a {name} ({host}): {exc}",
+            message=f"Conecté a {name} pero no pude abrir {label}: {exc}",
         )
+    finally:
+        remote.disconnect()
+
+
+async def open_youtube() -> TvActionResult:
+    return await launch_app(_YOUTUBE_LINK, "YouTube")
+
+
+async def open_netflix() -> TvActionResult:
+    return await launch_app(_NETFLIX_LINK, "Netflix")
+
+
+async def search_on_screen(query: str) -> TvActionResult:
+    # KEYCODE_SEARCH en Google TV abre el Asistente (micrófono), no la lupa de YouTube.
+    cleaned = " ".join(query.split())
+    if not cleaned:
+        return TvActionResult(ok=False, message="No oí qué buscar.")
+    link = (
+        "https://www.youtube.com/results?search_query=" + quote_plus(cleaned)
+    )
+    return await launch_app(link, f"YouTube “{cleaned}”")
+
+
+async def power_off() -> TvActionResult:
+    remote, name, error = await _connect_remote()
+    if error or remote is None:
+        return TvActionResult(ok=False, message=error)
 
     try:
         sent = "SLEEP"
@@ -299,7 +401,7 @@ async def power_off() -> TvActionResult:
             remote.send_key_command("POWER")
             sent = "POWER"
             await asyncio.sleep(0.4)
-        logger.info("Android TV off key=%s name=%s host=%s", sent, name, host)
+        logger.info("Android TV off key=%s name=%s", sent, name)
         return TvActionResult(ok=True, message=f"Mandé apagar {name}.")
     except ConnectionClosed as exc:
         logger.info("Android TV off sin conexión name=%s err=%s", name, exc)

@@ -7,8 +7,17 @@ from fastapi import UploadFile
 
 from app.features.commands.models import CommandName, DispatchResponse, PracticeMode
 from app.features.conversation.service import run_turn_from_text, transcribe_upload
+from app.features.tv.service import back as tv_back
+from app.features.tv.service import home as tv_home
+from app.features.tv.service import mute as tv_mute
+from app.features.tv.service import open_netflix as tv_open_netflix
+from app.features.tv.service import open_youtube as tv_open_youtube
+from app.features.tv.service import play_pause as tv_play_pause
 from app.features.tv.service import power_off as tv_power_off
 from app.features.tv.service import power_on as tv_power_on
+from app.features.tv.service import search_on_screen as tv_search
+from app.features.tv.service import volume_down as tv_volume_down
+from app.features.tv.service import volume_up as tv_volume_up
 
 logger = logging.getLogger(__name__)
 
@@ -145,6 +154,153 @@ def _is_tv_power_off(compact: str) -> bool:
     return _has_tv_off_verb(compact)
 
 
+def _has_youtube(compact: str) -> bool:
+    blob = _collapsed(compact)
+    return "youtube" in blob or "yutube" in blob or "youtobe" in blob
+
+
+def _has_netflix(compact: str) -> bool:
+    return "netflix" in _collapsed(compact)
+
+
+def _has_tv_surface(compact: str) -> bool:
+    # Home/pausa sin "tele" se come frases del tutor; YouTube/Netflix sí anclan.
+    return _has_tv(compact) or _has_youtube(compact) or _has_netflix(compact)
+
+
+def _has_media_control_verb(compact: str) -> bool:
+    blob = _collapsed(compact)
+    if "play pause" in compact or "playpause" in blob:
+        return True
+    return any(
+        token in blob
+        for token in ("pausa", "pause", "reproduce", "reanuda", "resume")
+    ) or bool(re.search(r"\bplay\b", compact))
+
+
+def _has_volume_word(compact: str) -> bool:
+    blob = _collapsed(compact)
+    return "volumen" in blob or "volume" in blob or "volúmen" in blob
+
+
+def _is_tv_volume_down(compact: str) -> bool:
+    if not _has_volume_word(compact):
+        return False
+    blob = _collapsed(compact)
+    if any(token in compact for token in ("volume down", "turn down")):
+        return True
+    return any(
+        token in blob
+        for token in ("baja", "bajar", "baje", "menos", "disminu", "quiet")
+    )
+
+
+def _is_tv_volume_up(compact: str) -> bool:
+    if not _has_volume_word(compact):
+        return False
+    if _is_tv_volume_down(compact):
+        return False
+    blob = _collapsed(compact)
+    if any(token in compact for token in ("volume up", "turn up")):
+        return True
+    return any(
+        token in blob
+        for token in ("sube", "subi", "subir", "aument", "mas", "más", "loud", "alza")
+    )
+
+
+def _is_tv_mute(compact: str) -> bool:
+    blob = _collapsed(compact)
+    # "silencio" suelto en el tutor no debe mutear; mute en inglés sí es específico.
+    if "mute" in blob or "unmute" in blob:
+        return True
+    if any(token in blob for token in ("silenci",)):
+        return _has_tv_surface(compact) or _has_volume_word(compact)
+    if "sonido" in blob and any(token in blob for token in ("quita", "sin", "apaga")):
+        return _has_tv_surface(compact) or _has_volume_word(compact)
+    return False
+
+
+def _is_tv_home(compact: str) -> bool:
+    if not _has_tv_surface(compact):
+        return False
+    blob = _collapsed(compact)
+    return any(token in blob for token in ("home", "inicio", "menuprincipal"))
+
+
+def _is_tv_back(compact: str) -> bool:
+    if not _has_tv_surface(compact):
+        return False
+    blob = _collapsed(compact)
+    if "go back" in compact:
+        return True
+    return any(token in blob for token in ("atras", "atrás", "back"))
+
+
+def _is_tv_play_pause(compact: str) -> bool:
+    if not _has_tv_surface(compact):
+        return False
+    return _has_media_control_verb(compact)
+
+
+def _is_tv_open_youtube(compact: str) -> bool:
+    if not _has_youtube(compact):
+        return False
+    # "pausa youtube" es play/pausa, no relanzar la app.
+    return not _has_media_control_verb(compact)
+
+
+def _is_tv_open_netflix(compact: str) -> bool:
+    if not _has_netflix(compact):
+        return False
+    return not _has_media_control_verb(compact)
+
+
+def _tv_search_query(compact: str) -> Optional[str]:
+    # "busca" se come el tutor. "ok tele gatos" / "okay tv cats".
+    blob = re.sub(r"\bt\s+v\b", "tv", compact)
+    match = re.search(
+        r"\b(?:ok(?:ay|ey)?|oye)\s+(?:tele|tv)\b\s+(.+)$",
+        blob,
+    )
+    if not match:
+        return None
+    query = match.group(1).strip()
+    query = re.sub(r"\b(por favor|please)\b", " ", query)
+    query = re.sub(r"\s+", " ", query).strip()
+    if len(query) < 2:
+        return None
+    return query[:80]
+
+
+def _detect_tv_command(compact: str) -> Optional[CommandName]:
+    # Apps y teclas antes de power: "besto friendo sube el volumen de la tele"
+    # no debe caer en el fallback de encender por nombre+tv.
+    if _tv_search_query(compact):
+        return "tv_search"
+    if _is_tv_open_youtube(compact):
+        return "tv_open_youtube"
+    if _is_tv_open_netflix(compact):
+        return "tv_open_netflix"
+    if _is_tv_volume_up(compact):
+        return "tv_volume_up"
+    if _is_tv_volume_down(compact):
+        return "tv_volume_down"
+    if _is_tv_mute(compact):
+        return "tv_mute"
+    if _is_tv_play_pause(compact):
+        return "tv_play_pause"
+    if _is_tv_home(compact):
+        return "tv_home"
+    if _is_tv_back(compact):
+        return "tv_back"
+    if _is_tv_power_on(compact):
+        return "tv_power_on"
+    if _is_tv_power_off(compact):
+        return "tv_power_off"
+    return None
+
+
 def detect_command(
     transcript: str,
     japanese_enabled: bool,
@@ -155,10 +311,10 @@ def detect_command(
         return "enable_japanese_mode", None
     if _is_disable_japanese(compact):
         return "disable_japanese_mode", None
-    if _is_tv_power_on(compact):
-        return "tv_power_on", None
-    if _is_tv_power_off(compact):
-        return "tv_power_off", None
+
+    tv_command = _detect_tv_command(compact)
+    if tv_command:
+        return tv_command, None
 
     if japanese_enabled:
         practice = _detect_practice_mode(compact)
@@ -167,6 +323,19 @@ def detect_command(
         return "japanese_turn", None
 
     return "unknown", None
+
+
+_TV_REMOTE_ACTIONS = {
+    "tv_power_off": tv_power_off,
+    "tv_volume_up": tv_volume_up,
+    "tv_volume_down": tv_volume_down,
+    "tv_mute": tv_mute,
+    "tv_home": tv_home,
+    "tv_back": tv_back,
+    "tv_play_pause": tv_play_pause,
+    "tv_open_youtube": tv_open_youtube,
+    "tv_open_netflix": tv_open_netflix,
+}
 
 
 async def dispatch(
@@ -198,8 +367,25 @@ async def dispatch(
             device_message=result.message,
         )
 
-    if command == "tv_power_off":
-        result = await tv_power_off()
+    if command == "tv_search":
+        query = _tv_search_query(_compact(transcript)) or ""
+        result = await tv_search(query)
+        logger.info(
+            "TV command=%s ok=%s chars=%s message=%s",
+            command,
+            result.ok,
+            len(query),
+            result.message,
+        )
+        return DispatchResponse(
+            command=command,
+            transcript=transcript,
+            device_message=result.message,
+        )
+
+    action = _TV_REMOTE_ACTIONS.get(command)
+    if action is not None:
+        result = await action()
         logger.info("TV command=%s ok=%s message=%s", command, result.ok, result.message)
         return DispatchResponse(
             command=command,

@@ -11,6 +11,15 @@ CommandName = Literal[
     "japanese_turn",
     "tv_power_on",
     "tv_power_off",
+    "tv_volume_up",
+    "tv_volume_down",
+    "tv_mute",
+    "tv_home",
+    "tv_back",
+    "tv_play_pause",
+    "tv_open_youtube",
+    "tv_open_netflix",
+    "tv_search",
     "unknown",
 ]
 PracticeMode = Literal["conversar", "corregir", "ideas"]

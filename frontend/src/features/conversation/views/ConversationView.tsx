@@ -7,6 +7,7 @@ import { TutorStage } from "@/features/conversation/components/TutorStage";
 import { useAudioRecorder } from "@/features/conversation/hooks/useAudioRecorder";
 import { useDispatchCommand } from "@/features/conversation/hooks/useDispatchCommand";
 import { useSpeechPlayback } from "@/features/conversation/hooks/useSpeechPlayback";
+import { TV_COMMANDS } from "@/features/conversation/types/commands";
 import type { ChatMessage, PracticeMode } from "@/features/conversation/types/turn";
 
 const GREETING: ChatMessage = {
@@ -92,15 +93,10 @@ export function ConversationView() {
         return;
       }
 
-      if (result.command === "tv_power_on" || result.command === "tv_power_off") {
+      if (TV_COMMANDS.has(result.command)) {
         const heard = result.transcript ? ` Te oí: “${result.transcript}”.` : "";
         setHint(
-          `${
-            result.device_message
-            ?? (result.command === "tv_power_on"
-              ? "Mandé despertar la tele."
-              : "Intenté apagar la tele.")
-          }${heard}`,
+          `${result.device_message ?? "Mandé el comando a la tele."}${heard}`,
         );
         return;
       }
@@ -191,7 +187,8 @@ export function ConversationView() {
               onReplay={speech.speakJapanese}
             />
             <p className="mt-2 px-1 text-xs text-zinc-400">
-              También: disable japanese mode, modo corregir, o enciende/apaga la tele.
+              También: disable japanese mode, modo corregir, o controla la tele
+              (volumen, pausa, YouTube). Para buscar en YouTube: ok tele y el texto.
             </p>
           </div>
         ) : null}

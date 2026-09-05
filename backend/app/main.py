@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import FastAPI
 
 from app.core.config import settings
@@ -6,6 +8,15 @@ from app.features.commands.controller import router as commands_router
 from app.features.conversation.controller import router as conversation_router
 from app.features.health.controller import router as health_router
 from app.features.tv.controller import router as tv_router
+
+# Uvicorn no enseña logger.info de app.* sin un handler propio.
+_app_log = logging.getLogger("app")
+if not _app_log.handlers:
+    _handler = logging.StreamHandler()
+    _handler.setFormatter(logging.Formatter("%(levelname)s:     %(message)s"))
+    _app_log.addHandler(_handler)
+    _app_log.setLevel(logging.INFO)
+    _app_log.propagate = False
 
 app = FastAPI(title=settings.app_name)
 setup_cors(app)

@@ -15,6 +15,8 @@ class Settings(BaseSettings):
 
     # Nombre Cast (substring). Vacío = primer Chromecast / el que parezca TV.
     tv_cast_name: str = ""
+    # IP Cast. Si hay valor, no hace mDNS en cada encendido/apagado.
+    tv_cast_host: str = ""
 
 
 settings = Settings()

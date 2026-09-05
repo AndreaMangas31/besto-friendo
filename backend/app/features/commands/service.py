@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import re
+import time
 from typing import Optional, Tuple
 
 from fastapi import UploadFile
@@ -350,13 +351,16 @@ async def dispatch(
     history_json: Optional[str],
     mode: Optional[str],
 ) -> DispatchResponse:
+    stt_started = time.perf_counter()
     transcript = await transcribe_upload(audio)
+    stt_ms = (time.perf_counter() - stt_started) * 1000
     command, practice_mode = detect_command(transcript, japanese_enabled)
     logger.info(
-        "Dispatch command=%s practice_mode=%s japanese_enabled=%s transcript=%s",
+        "Dispatch command=%s practice_mode=%s japanese_enabled=%s stt_ms=%.0f transcript=%s",
         command,
         practice_mode,
         japanese_enabled,
+        stt_ms,
         transcript[:120],
     )
 
@@ -365,8 +369,16 @@ async def dispatch(
         return DispatchResponse(command=command, transcript=transcript, turn=turn)
 
     if command == "tv_power_on":
+        tv_started = time.perf_counter()
         result = await asyncio.to_thread(tv_power_on)
-        logger.info("TV command=%s ok=%s message=%s", command, result.ok, result.message)
+        logger.info(
+            "TV command=%s ok=%s stt_ms=%.0f tv_ms=%.0f message=%s",
+            command,
+            result.ok,
+            stt_ms,
+            (time.perf_counter() - tv_started) * 1000,
+            result.message,
+        )
         return DispatchResponse(
             command=command,
             transcript=transcript,
@@ -375,12 +387,15 @@ async def dispatch(
 
     if command == "tv_search":
         query = _tv_search_query(_compact(transcript)) or ""
+        tv_started = time.perf_counter()
         result = await tv_search(query)
         logger.info(
-            "TV command=%s ok=%s chars=%s message=%s",
+            "TV command=%s ok=%s chars=%s stt_ms=%.0f tv_ms=%.0f message=%s",
             command,
             result.ok,
             len(query),
+            stt_ms,
+            (time.perf_counter() - tv_started) * 1000,
             result.message,
         )
         return DispatchResponse(
@@ -391,8 +406,16 @@ async def dispatch(
 
     action = _TV_REMOTE_ACTIONS.get(command)
     if action is not None:
+        tv_started = time.perf_counter()
         result = await action()
-        logger.info("TV command=%s ok=%s message=%s", command, result.ok, result.message)
+        logger.info(
+            "TV command=%s ok=%s stt_ms=%.0f tv_ms=%.0f message=%s",
+            command,
+            result.ok,
+            stt_ms,
+            (time.perf_counter() - tv_started) * 1000,
+            result.message,
+        )
         return DispatchResponse(
             command=command,
             transcript=transcript,

@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 from typing import List, Optional
 
 from fastapi import HTTPException, UploadFile
@@ -74,6 +75,7 @@ async def transcribe_upload(audio: UploadFile) -> str:
     filename = audio.filename or "recording.webm"
     content_type = audio.content_type or "application/octet-stream"
 
+    started = time.perf_counter()
     try:
         user_text = await provider.transcribe(payload, filename, content_type)
     except APIError as exc:
@@ -88,6 +90,12 @@ async def transcribe_upload(audio: UploadFile) -> str:
             status_code=400,
             detail="No se transcribió texto. Prueba a hablar más cerca del micrófono.",
         )
+    logger.info(
+        "STT listo chars=%s ms=%.0f filename=%s",
+        len(user_text),
+        (time.perf_counter() - started) * 1000,
+        filename,
+    )
     return user_text
 
 

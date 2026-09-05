@@ -1,7 +1,9 @@
 import asyncio
 import itertools
 import logging
+import threading
 import time
+import uuid
 from pathlib import Path
 from typing import List, Optional, Tuple
 from urllib.parse import quote_plus
@@ -39,7 +41,16 @@ _YOUTUBE_LINK = "https://www.youtube.com"
 _NETFLIX_LINK = "https://www.netflix.com"
 # Un tap de VOLUME_* apenas se nota; varios imitan “sube/baja un poco”.
 _VOLUME_REPEATS = 5
+_CAST_PORT = 8009
+# UUID dummy: get_chromecast_from_host lo exige; no hace falta el real para play_media.
+_CAST_UUID = uuid.UUID(int=0)
+# IP de un discovery; caduca porque el DHCP puede cambiarla.
+_CACHE_TTL_SEC = 8 * 60
 _pairing_remote: Optional[AndroidTVRemote] = None
+_cache_lock = threading.Lock()
+_cached_name = ""
+_cached_host = ""
+_cached_at = 0.0
 
 
 def _next_wake_media() -> Tuple[str, str]:
@@ -136,19 +147,88 @@ def _cast_host(cast: pychromecast.Chromecast) -> str:
     return str(getattr(info, "host", None) or getattr(cast, "host", None) or "")
 
 
-def _resolve_target() -> Tuple[str, str, str]:
+def _configured_host() -> str:
+    return (settings.tv_cast_host or "").strip()
+
+
+def _forget_cached_target() -> None:
+    global _cached_name, _cached_host, _cached_at
+    with _cache_lock:
+        _cached_name = ""
+        _cached_host = ""
+        _cached_at = 0.0
+
+
+def _store_cached_target(name: str, host: str) -> None:
+    global _cached_name, _cached_host, _cached_at
+    with _cache_lock:
+        _cached_name = name
+        _cached_host = host
+        _cached_at = time.monotonic()
+
+
+def _read_cached_target() -> Tuple[str, str]:
+    with _cache_lock:
+        if not _cached_host:
+            return "", ""
+        if time.monotonic() - _cached_at > _CACHE_TTL_SEC:
+            return "", ""
+        return _cached_name, _cached_host
+
+
+def _discover_target() -> Tuple[str, str, str]:
+    started = time.perf_counter()
     chromecasts, browser = _discover()
     try:
         cast, error = _pick_cast(chromecasts)
         if error or cast is None:
+            logger.info(
+                "TV target discover fail ms=%.0f err=%s",
+                (time.perf_counter() - started) * 1000,
+                error,
+            )
             return "", "", error
         host = _cast_host(cast)
         name = _cast_name(cast)
         if not host:
             return name, "", f"Vi {name} pero sin IP."
+        _store_cached_target(name, host)
+        logger.info(
+            "TV target discover host=%s name=%s ms=%.0f",
+            host,
+            name,
+            (time.perf_counter() - started) * 1000,
+        )
         return name, host, ""
     finally:
         _stop_browser(browser)
+
+
+def _resolve_target(force_rediscover: bool = False) -> Tuple[str, str, str]:
+    started = time.perf_counter()
+    configured = _configured_host()
+    if configured:
+        name = (settings.tv_cast_name or "").strip() or configured
+        logger.info(
+            "TV target env host=%s name=%s ms=%.0f",
+            configured,
+            name,
+            (time.perf_counter() - started) * 1000,
+        )
+        return name, configured, ""
+
+    if not force_rediscover:
+        name, host = _read_cached_target()
+        if host:
+            logger.info(
+                "TV target cache hit host=%s name=%s ms=%.0f",
+                host,
+                name,
+                (time.perf_counter() - started) * 1000,
+            )
+            return name, host, ""
+
+    return _discover_target()
 
 
 def _new_remote(host: str) -> AndroidTVRemote:
@@ -162,50 +242,105 @@ def _new_remote(host: str) -> AndroidTVRemote:
     )
 
 
-def _with_cast() -> Tuple[Optional[pychromecast.Chromecast], Optional[object], str]:
-    chromecasts, browser = _discover()
-    cast, error = _pick_cast(chromecasts)
-    if error:
-        _stop_browser(browser)
-        logger.info("Cast no disponible: %s", error)
-        return None, None, error
-    return cast, browser, ""
+def _chromecast_from_host(host: str, name: str) -> pychromecast.Chromecast:
+    return pychromecast.get_chromecast_from_host(
+        (host, _CAST_PORT, _CAST_UUID, "Unknown", name or "Chromecast"),
+        tries=1,
+        retry_wait=0.5,
+        timeout=5,
+    )
+
+
+def _disconnect_cast(cast: object) -> None:
+    disconnect = getattr(cast, "disconnect", None)
+    if not callable(disconnect):
+        return
+    try:
+        disconnect()
+    except TypeError:
+        try:
+            disconnect(blocking=False)
+        except Exception:
+            logger.info("Cast disconnect no bloqueante falló")
+    except Exception:
+        logger.info("Cast disconnect falló")
+
+
+def _finish_wake_later(cast: object, name: str) -> None:
+    # CEC ya suele haber disparado con play_media; quit en background para no inflar TTFB.
+    try:
+        time.sleep(1.5)
+        try:
+            quit_app = getattr(cast, "quit_app", None)
+            if callable(quit_app):
+                quit_app()
+                logger.info("Cast wake quit receiver name=%s", name)
+        except Exception:
+            logger.info("Cast wake no pudo cerrar receiver name=%s", name)
+    finally:
+        _disconnect_cast(cast)
+
+
+def _send_wake(cast: pychromecast.Chromecast, name: str, host: str) -> None:
+    started = time.perf_counter()
+    cast.wait(timeout=5)
+    mc = cast.media_controller
+    wake_url, wake_title = _next_wake_media()
+    logger.info("Cast wake load name=%s host=%s title=%s url=%s", name, host, wake_title, wake_url)
+    mc.play_media(wake_url, "image/jpeg", title=wake_title)
+    logger.info(
+        "Cast wake sent name=%s host=%s connect_ms=%.0f",
+        name,
+        host,
+        (time.perf_counter() - started) * 1000,
+    )
+    threading.Thread(
+        target=_finish_wake_later,
+        args=(cast, name),
+        daemon=True,
+        name="cast-wake-quit",
+    ).start()
 
 
 def power_on() -> TvActionResult:
-    cast, browser, error = _with_cast()
-    if error or cast is None:
+    started = time.perf_counter()
+    name, host, error = _resolve_target()
+    if error:
         return TvActionResult(ok=False, message=error)
 
-    name = _cast_name(cast)
     try:
-        cast.wait(timeout=10)
         try:
-            mc = cast.media_controller
-            wake_url, wake_title = _next_wake_media()
-            logger.info("Cast wake load name=%s title=%s url=%s", name, wake_title, wake_url)
-            mc.play_media(wake_url, "image/jpeg", title=wake_title)
-            mc.block_until_active(timeout=10)
-        except Exception:
-            logger.info("Cast conectó a %s; el media no arrancó", name)
-        else:
-            # CEC ya disparó; si no cerramos, se queda el receiver (foto de Google) a pantalla completa.
-            time.sleep(1.5)
-            try:
-                cast.quit_app()
-                logger.info("Cast wake quit receiver name=%s", name)
-            except Exception:
-                logger.info("Cast wake no pudo cerrar receiver name=%s", name)
-        logger.info("Cast wake ok name=%s", name)
+            cast = _chromecast_from_host(host, name)
+            _send_wake(cast, name, host)
+        except Exception as first:
+            if _configured_host():
+                raise first
+            logger.info(
+                "Cast wake host cache falló host=%s err=%s; redescubro",
+                host,
+                first,
+            )
+            _forget_cached_target()
+            name, host, error = _resolve_target(force_rediscover=True)
+            if error:
+                return TvActionResult(ok=False, message=error)
+            cast = _chromecast_from_host(host, name)
+            _send_wake(cast, name, host)
+        logger.info(
+            "Cast wake ok name=%s host=%s tv_ms=%.0f",
+            name,
+            host,
+            (time.perf_counter() - started) * 1000,
+        )
         return TvActionResult(ok=True, message=f"Mandé despertar {name}.")
     except Exception as exc:
-        logger.exception("Cast wake falló name=%s", name)
+        logger.exception("Cast wake falló name=%s host=%s", name, host)
+        if not _configured_host():
+            _forget_cached_target()
         return TvActionResult(
             ok=False,
             message=f"Vi {name} pero no pude despertarla: {exc}",
         )
-    finally:
-        _stop_browser(browser)
 
 
 async def pair_start() -> TvActionResult:
@@ -271,7 +406,8 @@ async def pair_finish(pin: str) -> TvActionResult:
 
 
 async def _connect_remote() -> Tuple[Optional[AndroidTVRemote], str, str]:
-    # Misma sesión TLS que el pairing. Sin certs o PIN, InvalidAuth.
+    # Un mando por comando, como en el commit que sí apagaba. Sin certs o PIN, InvalidAuth.
+    started = time.perf_counter()
     name, host, error = await asyncio.to_thread(_resolve_target)
     if error:
         return None, "", error
@@ -286,6 +422,12 @@ async def _connect_remote() -> Tuple[Optional[AndroidTVRemote], str, str]:
     except CannotConnect as exc:
         logger.info("Android TV mando no conectó name=%s host=%s err=%s", name, host, exc)
         return None, name, f"No conecté el mando a {name} ({host}): {exc}"
+    logger.info(
+        "Android TV connect ok name=%s host=%s ms=%.0f",
+        name,
+        host,
+        (time.perf_counter() - started) * 1000,
+    )
     return remote, name, ""
 
 
@@ -426,7 +568,12 @@ async def power_off() -> TvActionResult:
             remote.send_key_command("POWER")
             sent = "POWER"
             await asyncio.sleep(0.4)
-        logger.info("Android TV off key=%s name=%s", sent, name)
+        logger.info(
+            "Android TV off key=%s name=%s is_on=%s",
+            sent,
+            name,
+            remote.is_on,
+        )
         return TvActionResult(ok=True, message=f"Mandé apagar {name}.")
     except ConnectionClosed as exc:
         logger.info("Android TV off sin conexión name=%s err=%s", name, exc)

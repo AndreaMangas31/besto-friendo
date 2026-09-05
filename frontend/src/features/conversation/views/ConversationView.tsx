@@ -27,22 +27,19 @@ export function ConversationView() {
       if (file) {
         const turn = await sender.send(file, messages);
         if (turn) {
-          const historyText = [turn.explanation, turn.assistant_text]
-            .filter(Boolean)
-            .join("\n");
           setMessages((current) => [
             ...current,
             { role: "user", text: turn.user_text },
             {
               role: "assistant",
-              text: historyText,
-              explanation: turn.explanation,
-              segments: turn.segments,
+              text: turn.assistant_text,
+              speak: turn.speak || turn.assistant_text,
+              blocks: turn.blocks,
             },
           ]);
           // TTS solo japonés (speak), nunca el romaji ni la explicación.
-          if (turn.assistant_text) {
-            speech.speakJapanese(turn.assistant_text);
+          if (turn.speak || turn.assistant_text) {
+            speech.speakJapanese(turn.speak || turn.assistant_text);
           }
         }
       }

@@ -1,9 +1,31 @@
 import { JapaneseWithRomaji } from "@/features/conversation/components/JapaneseWithRomaji";
-import type { ChatMessage } from "@/features/conversation/types/turn";
+import type { ChatMessage, ContentBlock } from "@/features/conversation/types/turn";
 
 type MessageListProps = {
   messages: ChatMessage[];
 };
+
+function AssistantBlocks({ blocks, speak }: { blocks: ContentBlock[]; speak?: string }) {
+  if (blocks.length === 0) {
+    return speak ? (
+      <p className="mt-1 text-lg leading-tight">{speak}</p>
+    ) : null;
+  }
+
+  return (
+    <div className="mt-1 flex flex-wrap items-end gap-x-1 gap-y-2 text-sm leading-relaxed">
+      {blocks.map((block, index) =>
+        block.type === "jp" && block.segments?.length ? (
+          <JapaneseWithRomaji key={`jp-${index}`} segments={block.segments} />
+        ) : block.type === "text" && block.text ? (
+          <span key={`text-${index}`} className="whitespace-pre-wrap">
+            {block.text}
+          </span>
+        ) : null,
+      )}
+    </div>
+  );
+}
 
 export function MessageList({ messages }: MessageListProps) {
   if (messages.length === 0) {
@@ -29,16 +51,7 @@ export function MessageList({ messages }: MessageListProps) {
             {message.role === "user" ? "Tú" : "Tutor"}
           </p>
           {message.role === "assistant" ? (
-            <>
-              {message.explanation ? (
-                <p className="mt-1 whitespace-pre-wrap">{message.explanation}</p>
-              ) : null}
-              {message.segments && message.segments.length > 0 ? (
-                <JapaneseWithRomaji segments={message.segments} />
-              ) : (
-                <p className="mt-1 whitespace-pre-wrap">{message.text}</p>
-              )}
-            </>
+            <AssistantBlocks blocks={message.blocks ?? []} speak={message.speak} />
           ) : (
             <p className="mt-1 whitespace-pre-wrap">{message.text}</p>
           )}

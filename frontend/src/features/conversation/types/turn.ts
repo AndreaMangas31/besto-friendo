@@ -5,19 +5,23 @@ export type JapaneseSegment = {
   romaji: string;
 };
 
+export type ContentBlock =
+  | { type: "text"; text: string; segments?: JapaneseSegment[] }
+  | { type: "jp"; text?: string; segments: JapaneseSegment[] };
+
 export type ChatMessage = {
   role: ChatRole;
-  // Historial hacia el backend: transcripción (tú) o speak + explanation (tutor).
+  // Historial plano hacia el backend (prosa + surface japonés).
   text: string;
-  explanation?: string;
-  segments?: JapaneseSegment[];
+  speak?: string;
+  blocks?: ContentBlock[];
 };
 
 export type ConversationTurnResponse = {
   user_text: string;
   assistant_text: string;
-  explanation: string;
-  segments: JapaneseSegment[];
+  speak: string;
+  blocks: ContentBlock[];
 };
 
 export type SendTurnStatus = "idle" | "sending" | "ok" | "error";

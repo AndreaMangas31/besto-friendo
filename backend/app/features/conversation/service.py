@@ -11,7 +11,7 @@ from app.features.conversation.models import (
     HistoryTurn,
 )
 from app.features.japanese.models import TutorTurn
-from app.features.japanese.service import build_messages, parse_tutor_reply
+from app.features.japanese.service import build_messages, flatten_blocks, parse_tutor_reply
 from app.shared.ai.factory import AiNotConfiguredError, get_ai_provider
 
 logger = logging.getLogger(__name__)
@@ -100,18 +100,18 @@ async def run_turn(
         ) from exc
 
     reply = parse_tutor_reply(raw_reply)
-    assistant_text = reply.speak or reply.explanation or raw_reply
+    assistant_text = flatten_blocks(reply.blocks) or reply.speak or raw_reply
 
     logger.info(
-        "Turno listo user_chars=%s speak_chars=%s segments=%s",
+        "Turno listo user_chars=%s speak_chars=%s blocks=%s",
         len(user_text),
-        len(assistant_text),
-        len(reply.segments),
+        len(reply.speak),
+        len(reply.blocks),
     )
 
     return ConversationTurnResponse(
         user_text=user_text,
         assistant_text=assistant_text,
-        explanation=reply.explanation,
-        segments=reply.segments,
+        speak=reply.speak,
+        blocks=reply.blocks,
     )

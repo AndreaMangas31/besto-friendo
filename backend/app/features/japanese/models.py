@@ -3,6 +3,7 @@ from typing import List, Literal
 from pydantic import BaseModel, Field
 
 Role = Literal["user", "assistant"]
+BlockType = Literal["text", "jp"]
 
 
 class TutorTurn(BaseModel):
@@ -11,12 +12,17 @@ class TutorTurn(BaseModel):
 
 
 class JapaneseSegment(BaseModel):
-    # Texto japonés de un trozo (kanji/kana) y su romaji encima, como en la captura.
+    # Kanji/kana de un trozo y romaji encima (como la captura).
     surface: str
     romaji: str
 
 
-class TutorReply(BaseModel):
-    speak: str
-    explanation: str = ""
+class ContentBlock(BaseModel):
+    type: BlockType
+    text: str = ""
     segments: List[JapaneseSegment] = Field(default_factory=list)
+
+
+class TutorReply(BaseModel):
+    speak: str = ""
+    blocks: List[ContentBlock] = Field(default_factory=list)

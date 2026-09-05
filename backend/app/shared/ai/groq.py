@@ -28,11 +28,10 @@ class GroqProvider:
             len(audio),
             content_type,
         )
-        # language=ja sesga Whisper a japonés (si oyes inglés transcrito, mira el MIME).
+        # No fijes language=ja: si habla castellano/inglés, Whisper lo forzaría a japonés.
         result = await self._client.audio.transcriptions.create(
             model=self._stt_model,
             file=(filename, BytesIO(audio), content_type),
-            language="ja",
         )
         return (result.text or "").strip()
 
@@ -51,5 +50,11 @@ class GroqProvider:
             max_completion_tokens=2048,
             extra_body={"reasoning_effort": "medium"},
         )
-        choice = result.choices[0].message.content
-        return (choice or "").strip()
+        choice = result.choices[0].message
+        text = (choice.content or "").strip()
+        # Algunos modelos de razonamiento dejan el JSON en reasoning y content vacío.
+        if not text:
+            reasoning = getattr(choice, "reasoning", None)
+            if isinstance(reasoning, str):
+                text = reasoning.strip()
+        return text

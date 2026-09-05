@@ -11,7 +11,7 @@ from app.features.conversation.models import (
     HistoryTurn,
 )
 from app.features.japanese.models import TutorTurn
-from app.features.japanese.service import build_messages
+from app.features.japanese.service import build_messages, parse_tutor_reply
 from app.shared.ai.factory import AiNotConfiguredError, get_ai_provider
 
 logger = logging.getLogger(__name__)
@@ -89,7 +89,7 @@ async def run_turn(
             )
 
         messages = build_messages(history, user_text)
-        assistant_text = await provider.complete(messages)
+        raw_reply = await provider.complete(messages)
     except HTTPException:
         raise
     except APIError as exc:
@@ -99,13 +99,19 @@ async def run_turn(
             detail=f"Groq no pudo completar el turno: {exc}",
         ) from exc
 
+    reply = parse_tutor_reply(raw_reply)
+    assistant_text = reply.speak or reply.explanation or raw_reply
+
     logger.info(
-        "Turno listo user_chars=%s assistant_chars=%s",
+        "Turno listo user_chars=%s speak_chars=%s segments=%s",
         len(user_text),
         len(assistant_text),
+        len(reply.segments),
     )
 
     return ConversationTurnResponse(
         user_text=user_text,
         assistant_text=assistant_text,
+        explanation=reply.explanation,
+        segments=reply.segments,
     )

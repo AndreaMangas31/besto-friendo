@@ -1,3 +1,4 @@
+import { JapaneseWithRomaji } from "@/features/conversation/components/JapaneseWithRomaji";
 import type { ChatMessage } from "@/features/conversation/types/turn";
 
 type MessageListProps = {
@@ -27,7 +28,20 @@ export function MessageList({ messages }: MessageListProps) {
           <p className="text-xs font-medium tracking-wide uppercase text-zinc-500">
             {message.role === "user" ? "Tú" : "Tutor"}
           </p>
-          <p className="mt-1 whitespace-pre-wrap">{message.text}</p>
+          {message.role === "assistant" ? (
+            <>
+              {message.explanation ? (
+                <p className="mt-1 whitespace-pre-wrap">{message.explanation}</p>
+              ) : null}
+              {message.segments && message.segments.length > 0 ? (
+                <JapaneseWithRomaji segments={message.segments} />
+              ) : (
+                <p className="mt-1 whitespace-pre-wrap">{message.text}</p>
+              )}
+            </>
+          ) : (
+            <p className="mt-1 whitespace-pre-wrap">{message.text}</p>
+          )}
         </li>
       ))}
     </ul>

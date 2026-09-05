@@ -1,6 +1,8 @@
 from typing import List
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+from app.features.japanese.models import JapaneseSegment
 
 
 class HistoryTurn(BaseModel):
@@ -11,6 +13,8 @@ class HistoryTurn(BaseModel):
 class ConversationTurnResponse(BaseModel):
     user_text: str
     assistant_text: str
+    explanation: str = ""
+    segments: List[JapaneseSegment] = Field(default_factory=list)
 
 
 class AudioReceivedResponse(BaseModel):

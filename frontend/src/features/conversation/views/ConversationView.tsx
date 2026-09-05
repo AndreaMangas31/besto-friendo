@@ -27,12 +27,23 @@ export function ConversationView() {
       if (file) {
         const turn = await sender.send(file, messages);
         if (turn) {
+          const historyText = [turn.explanation, turn.assistant_text]
+            .filter(Boolean)
+            .join("\n");
           setMessages((current) => [
             ...current,
             { role: "user", text: turn.user_text },
-            { role: "assistant", text: turn.assistant_text },
+            {
+              role: "assistant",
+              text: historyText,
+              explanation: turn.explanation,
+              segments: turn.segments,
+            },
           ]);
-          speech.speakJapanese(turn.assistant_text);
+          // TTS solo japonés (speak), nunca el romaji ni la explicación.
+          if (turn.assistant_text) {
+            speech.speakJapanese(turn.assistant_text);
+          }
         }
       }
       return;
@@ -53,8 +64,8 @@ export function ConversationView() {
             Besto Friendo
           </h1>
           <p className="text-zinc-600">
-            Habla en japonés. El backend transcribe y responde; el navegador lee
-            la respuesta en voz alta.
+            Habla en japonés, castellano o inglés. El japonés se muestra con
+            romaji encima; la voz lee solo el japonés.
           </p>
         </div>
 

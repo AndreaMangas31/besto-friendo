@@ -37,7 +37,7 @@ export function TutorStage({
   const catalog = useCommandCatalog();
 
   return (
-    <section className="flex flex-col items-center justify-center gap-6 px-6 py-10">
+    <section className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col px-4 pt-4 sm:px-6 sm:pt-6">
       <div className="flex w-full justify-end">
         <CommandHelp
           items={catalog.items}
@@ -45,30 +45,35 @@ export function TutorStage({
           errorMessage={catalog.errorMessage}
         />
       </div>
-      <div className="space-y-2 text-center">
-        <div className="flex items-center justify-center gap-2">
+      <div className="relative shrink-0">
+        <div className="space-y-2  text-center">
           <h1 className="text-3xl font-semibold tracking-tight text-zinc-900 md:text-4xl">
             Besto Friendo
           </h1>
+          <p className="mx-auto max-w-sm wrap-break-word px-1 text-zinc-600">
+            {japaneseEnabled
+              ? "Tutor de japonés. Habla o cambia de modo con la voz o los botones."
+              : "Pulsa el menú para ver qué puedes hacer."}
+          </p>
         </div>
-        <p className="max-w-sm text-zinc-600">
-          {japaneseEnabled
-            ? "Tutor de japonés. Habla o cambia de modo con la voz o los botones."
-            : "Pulsa la i para ver qué puedes hacer."}
-        </p>
       </div>
 
-      <TutorOrb
-        persona={persona}
-        activity={activity}
-        hidden={hideOrb}
-        luna={luna}
-        lunaPlayKey={lunaPlayKey}
-        heatingMood={heatingMood}
-      />
+      <div className="flex min-h-0 flex-1 flex-col items-center justify-center py-4">
+        <TutorOrb
+          persona={persona}
+          activity={activity}
+          hidden={hideOrb}
+          luna={luna}
+          lunaPlayKey={lunaPlayKey}
+          heatingMood={heatingMood}
+          hero={!japaneseEnabled}
+        />
+      </div>
 
       {japaneseEnabled ? (
-        <PracticeModes value={mode} onChange={onModeChange} />
+        <div className="shrink-0 pb-4">
+          <PracticeModes value={mode} onChange={onModeChange} />
+        </div>
       ) : null}
     </section>
   );

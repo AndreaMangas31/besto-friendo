@@ -24,7 +24,7 @@ export function ChatPanel({
   onReplay,
 }: ChatPanelProps) {
   return (
-    <section className="conversation-shell-panel flex min-h-[28rem] flex-1 flex-col rounded-3xl p-4 md:min-h-0">
+    <section className="conversation-shell-panel flex min-h-[28rem] min-w-0 flex-1 flex-col overflow-x-hidden rounded-3xl p-4 md:min-h-0">
       <MessageList messages={messages} onReplay={onReplay} />
 
       <div className="mt-4 space-y-3">
@@ -41,7 +41,7 @@ export function ChatPanel({
         ) : null}
 
         {notice ? (
-          <p className="text-center text-sm text-zinc-600">{notice}</p>
+          <p className="wrap-break-word text-center text-sm text-zinc-600">{notice}</p>
         ) : null}
 
         {recorderError ? (

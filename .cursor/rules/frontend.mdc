@@ -30,4 +30,4 @@ Next.js App Router + TypeScript + Tailwind. Gestor: pnpm.
 
 ## UI
 
-Tailwind. Estados visibles: loading, error de micro, error de red/503, lista vacía. No añadas librerías de UI sin pedirlo.
+Tailwind primero; detalle en [frontend-tailwind.mdc](frontend-tailwind.mdc). Estados visibles: loading, error de micro, error de red/503, lista vacía. No añadas librerías de UI sin pedirlo. Sin scroll horizontal.

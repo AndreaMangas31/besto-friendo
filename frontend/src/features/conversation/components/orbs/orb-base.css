@@ -246,6 +246,12 @@
   height: 14rem;
 }
 
+/* Idle a pantalla completa: el blob usa % del stage, así escala entero. */
+.tutor-orb-stage--hero {
+  width: min(22rem, 78vw);
+  height: min(22rem, 78vw);
+}
+
 .tutor-orb-think-mark {
   position: absolute;
   z-index: 5;
@@ -273,6 +279,11 @@
   .tutor-orb-stage {
     width: 16rem;
     height: 16rem;
+  }
+
+  .tutor-orb-stage--hero {
+    width: min(26rem, 52vw);
+    height: min(26rem, 52vw);
   }
 }
 

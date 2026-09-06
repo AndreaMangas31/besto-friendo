@@ -303,18 +303,22 @@ export function ConversationView() {
 
   return (
     <div
-      className="conversation-shell flex min-h-[calc(100vh)] flex-1 flex-col text-zinc-900"
+      className="conversation-shell flex min-h-dvh min-w-0 max-w-full flex-1 flex-col overflow-x-hidden text-zinc-900"
       data-persona={orbPersona}
       data-mood={heatingMood}
       data-luna={lunaOn ? "on" : "off"}
     >
       <ShellParticles />
       <div
-        className={`relative z-10 mx-auto flex w-full h-full flex-1 flex-col ${
+        className={`relative z-10 mx-auto flex h-full min-w-0 w-full max-w-full flex-1 flex-col ${
           japaneseEnabled ? "max-w-6xl md:flex-row" : "max-w-xl"
         }`}
       >
-        <div className={japaneseEnabled ? "md:w-[42%]" : "flex-1"}>
+        <div
+          className={`flex min-h-0 min-w-0 flex-col ${
+            japaneseEnabled ? "md:w-[42%]" : "flex-1"
+          }`}
+        >
           <TutorStage
             persona={orbPersona}
             activity={orbActivity}
@@ -328,7 +332,7 @@ export function ConversationView() {
           />
 
           {!japaneseEnabled ? (
-            <div className="space-y-3 px-6 pb-10">
+            <div className="mt-auto space-y-3 px-4 pb-8 sm:px-6">
               <TalkButton
                 isRecording={isRecording}
                 disabled={isSending}
@@ -340,7 +344,9 @@ export function ConversationView() {
                 </p>
               ) : null}
               {hint ? (
-                <p className="text-center text-sm text-zinc-600">{hint}</p>
+                <p className="wrap-break-word text-center text-sm text-zinc-600">
+                  {hint}
+                </p>
               ) : null}
               {recorder.errorMessage ? (
                 <p className="text-center text-sm text-red-700" role="alert">
@@ -357,7 +363,7 @@ export function ConversationView() {
         </div>
 
         {japaneseEnabled ? (
-          <div className="flex flex-1 flex-col p-4 md:p-6">
+          <div className="flex min-w-0 flex-1 flex-col p-4 md:p-6">
             <ChatPanel
               messages={messages}
               isRecording={isRecording}

@@ -22,6 +22,8 @@ type TutorOrbProps = {
   luna?: boolean;
   lunaPlayKey?: number;
   heatingMood?: HeatingMood;
+  /** Más grande y como pieza central (pantalla idle). */
+  hero?: boolean;
 };
 
 function LunaTail() {
@@ -54,6 +56,7 @@ export function TutorOrb({
   luna = false,
   lunaPlayKey = 0,
   heatingMood = "cold",
+  hero = false,
 }: TutorOrbProps) {
   const variant = ORB_VARIANTS[persona];
   const Scene = variant.Scene;
@@ -65,7 +68,7 @@ export function TutorOrb({
   return (
     <div className={`flex flex-col items-center gap-4 ${hidden ? "invisible" : ""}`}>
       <div
-        className={`tutor-orb-stage tutor-orb-stage--${persona}`}
+        className={`tutor-orb-stage tutor-orb-stage--${persona}${hero ? " tutor-orb-stage--hero" : ""}`}
         data-activity={activity}
         data-luna={luna ? "on" : "off"}
         data-mood={mood}

@@ -13,7 +13,7 @@ export function GateShell({ children }: GateShellProps) {
   const showPin = gate.ready && gate.required && !gate.unlocked;
 
   return (
-    <div className="relative min-h-full">
+    <div className="relative flex min-h-dvh min-w-0 max-w-full flex-1 flex-col overflow-x-hidden">
       {children}
       {showPin ? (
         <GatePinSheet

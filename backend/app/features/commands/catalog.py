@@ -101,6 +101,20 @@ CATALOG = CommandCatalogResponse(
             description="Escribe en la búsqueda de la pantalla lo que digas después de ‘ok tele’.",
             group="tv",
         ),
+        CommandHelpItem(
+            id="ps5_power_on",
+            title="Encender PlayStation",
+            example="enciende la PS5",
+            description="Despierta la consola y pone la tele en HDMI 1.",
+            group="ps5",
+        ),
+        CommandHelpItem(
+            id="ps5_power_off",
+            title="Reposo PlayStation",
+            example="apaga la PlayStation",
+            description="La manda a reposo, no al menú Apagar PS5. También: duerme la play.",
+            group="ps5",
+        ),
     ]
 )
 

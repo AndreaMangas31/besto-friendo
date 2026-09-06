@@ -6,3 +6,7 @@ openai>=1.50.0,<3.0.0
 pychromecast>=13.1.0,<14.0.0
 # 0.3+ pide Python 3.10; el venv local es 3.9.
 androidtvremote2>=0.0.13,<0.1.0
+# Sin extra [gui]: no hace falta stream ni PySide. Emparejado: pyremoteplay IP --register
+# pyee 12+ quitó ExecutorEventEmitter del paquete raíz; pyremoteplay 0.7 aún lo importa así.
+pyee>=8.1.0,<12
+pyremoteplay>=0.7.0,<1.0.0

@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { BestoFriendoSuccessAnimation } from "@/features/conversation/components/BestoFriendoSuccessAnimation";
 import { ChatPanel } from "@/features/conversation/components/ChatPanel";
 import { TalkButton } from "@/features/conversation/components/TalkButton";
 import { TutorStage } from "@/features/conversation/components/TutorStage";
 import { useAudioRecorder } from "@/features/conversation/hooks/useAudioRecorder";
 import { useDispatchCommand } from "@/features/conversation/hooks/useDispatchCommand";
 import { useSpeechPlayback } from "@/features/conversation/hooks/useSpeechPlayback";
-import { TV_COMMANDS } from "@/features/conversation/types/commands";
+import { PS5_COMMANDS, TV_COMMANDS } from "@/features/conversation/types/commands";
 import type { ChatMessage, PracticeMode } from "@/features/conversation/types/turn";
 
 const GREETING: ChatMessage = {
@@ -43,6 +44,25 @@ export function ConversationView() {
   const [mode, setMode] = useState<PracticeMode>("conversar");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [hint, setHint] = useState<string | null>(null);
+  const [successPlayKey, setSuccessPlayKey] = useState<number | null>(null);
+
+  const clearSuccessAnimation = useCallback(() => {
+    setSuccessPlayKey(null);
+  }, []);
+
+  useEffect(() => {
+    // ?burst=1 enseña el overlay sin mandar un comando a la tele/PS5.
+    if (new URLSearchParams(window.location.search).get("burst") === "1") {
+      setSuccessPlayKey(1);
+    }
+  }, []);
+
+  function celebrateDeviceSuccess(ok: boolean | null) {
+    if (!ok) {
+      return;
+    }
+    setSuccessPlayKey((current) => (current ?? 0) + 1);
+  }
 
   const isRecording = recorder.status === "recording";
   const isSending = dispatcher.status === "sending";
@@ -93,11 +113,23 @@ export function ConversationView() {
         return;
       }
 
+      if (PS5_COMMANDS.has(result.command)) {
+        const heard = result.transcript ? ` Te oí: “${result.transcript}”.` : "";
+        const fallback =
+          result.command === "ps5_power_on"
+            ? "Mandé despertar la PlayStation."
+            : "La mandé a reposo.";
+        setHint(`${result.device_message ?? fallback}${heard}`);
+        celebrateDeviceSuccess(result.ok);
+        return;
+      }
+
       if (TV_COMMANDS.has(result.command)) {
         const heard = result.transcript ? ` Te oí: “${result.transcript}”.` : "";
         setHint(
           `${result.device_message ?? "Mandé el comando a la tele."}${heard}`,
         );
+        celebrateDeviceSuccess(result.ok);
         return;
       }
 
@@ -189,6 +221,14 @@ export function ConversationView() {
           </div>
         ) : null}
       </div>
+
+      {successPlayKey !== null ? (
+        <BestoFriendoSuccessAnimation
+          key={successPlayKey}
+          playKey={successPlayKey}
+          onFinished={clearSuccessAnimation}
+        />
+      ) : null}
     </div>
   );
 }

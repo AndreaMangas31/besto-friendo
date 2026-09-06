@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import type { CommandHelpItem } from "@/features/conversation/types/commands";
+import type { CommandHelpGroup, CommandHelpItem } from "@/features/conversation/types/commands";
 
 type CommandHelpProps = {
   items: CommandHelpItem[];
@@ -9,10 +9,13 @@ type CommandHelpProps = {
   errorMessage: string | null;
 };
 
-const GROUP_LABEL = {
+const GROUP_LABEL: Record<CommandHelpGroup, string> = {
   tutor: "Tutor",
   tv: "Tele",
-} as const;
+  ps5: "PS5",
+};
+
+const GROUP_ORDER: CommandHelpGroup[] = ["tutor", "tv", "ps5"];
 
 export function CommandHelp({ items, isLoading, errorMessage }: CommandHelpProps) {
   const [open, setOpen] = useState(false);
@@ -45,8 +48,10 @@ export function CommandHelp({ items, isLoading, errorMessage }: CommandHelpProps
     };
   }, [open]);
 
-  const tutorItems = items.filter((item) => item.group === "tutor");
-  const tvItems = items.filter((item) => item.group === "tv");
+  const grouped = GROUP_ORDER.map((group) => ({
+    group,
+    items: items.filter((item) => item.group === group),
+  }));
 
   return (
     <div ref={rootRef} className="relative inline-flex">
@@ -78,8 +83,13 @@ export function CommandHelp({ items, isLoading, errorMessage }: CommandHelpProps
             ) : null}
             {!isLoading && !errorMessage ? (
               <div className="space-y-4">
-                <HelpGroup label={GROUP_LABEL.tutor} items={tutorItems} />
-                <HelpGroup label={GROUP_LABEL.tv} items={tvItems} />
+                {grouped.map(({ group, items: groupItems }) => (
+                  <HelpGroup
+                    key={group}
+                    label={GROUP_LABEL[group]}
+                    items={groupItems}
+                  />
+                ))}
               </div>
             ) : null}
           </div>

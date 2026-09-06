@@ -10,11 +10,12 @@ Si añades o cambias un comando de voz, el menú de la **i** debe enterarse. Fue
 
 ## Checklist (mismo cambio)
 
-1. Detector en `service.py` (`detect_command` / `_detect_tv_command`).
+1. Detector en `service.py` (`detect_command` / `_detect_tv_command` / `_detect_ps5_command`).
 2. `CommandName` en `backend/.../commands/models.py` y `frontend/.../types/commands.ts`.
 3. Si dispara la tele: `TV_COMMANDS` y el `if` en `dispatch`.
-4. **Entrada en `CATALOG`**: `id`, título, ejemplo que el detector acepte, descripción de una línea, `group` (`tutor` | `tv`).
+4. **Entrada en `CATALOG`**: `id`, título, ejemplo que el detector acepte, descripción de una línea, `group` (`tutor` | `tv` | `ps5`).
 5. `CommandHelpId` en el backend (mismo `id` que el catálogo).
+6. Si dispara la PS5: `PS5_COMMANDS` y el `if` en `dispatch`.
 
 No pongas `japanese_turn` ni `unknown` en el catálogo: no son frases que el usuario dispare.
 

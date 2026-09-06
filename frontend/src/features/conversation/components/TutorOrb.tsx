@@ -9,7 +9,7 @@ export function TutorOrb({ active = false }: TutorOrbProps) {
         className={`tutor-orb h-44 w-44 md:h-56 md:w-56 ${active ? "tutor-orb-active" : ""}`}
         aria-hidden
       />
-      <p className="text-sm font-medium text-zinc-500">Tu tutor</p>
+      <p className="text-sm font-medium text-zinc-500">Tu BBFF</p>
     </div>
   );
 }

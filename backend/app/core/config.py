@@ -18,5 +18,12 @@ class Settings(BaseSettings):
     # IP Cast. Si hay valor, no hace mDNS en cada encendido/apagado.
     tv_cast_host: str = ""
 
+    # IP de la PS5 (misma LAN que el backend). Vacío = comandos de Play no van.
+    ps5_host: str = ""
+    # MAC para magic packet si wakeup de Remote Play no está emparejado.
+    ps5_mac: str = ""
+    # Perfil pyremoteplay. Vacío = el primero registrado para esa consola.
+    ps5_user: str = ""
+
 
 settings = Settings()

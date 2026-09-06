@@ -458,6 +458,12 @@ async def send_key(key: str, repeats: int, label: str) -> TvActionResult:
         remote.disconnect()
 
 
+async def select_hdmi(input_n: int = 1) -> TvActionResult:
+    # Tecla HDMI_n del mando Android. La Play está en el 1.
+    n = max(1, min(4, int(input_n)))
+    return await send_key(f"TV_INPUT_HDMI_{n}", 1, f"HDMI {n}")
+
+
 async def volume_up() -> TvActionResult:
     return await send_key("VOLUME_UP", _VOLUME_REPEATS, "subir volumen")
 

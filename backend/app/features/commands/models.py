@@ -20,10 +20,12 @@ CommandName = Literal[
     "tv_open_youtube",
     "tv_open_netflix",
     "tv_search",
+    "ps5_power_on",
+    "ps5_power_off",
     "unknown",
 ]
 PracticeMode = Literal["conversar", "corregir", "ideas"]
-CommandHelpGroup = Literal["tutor", "tv"]
+CommandHelpGroup = Literal["tutor", "tv", "ps5"]
 # japanese_turn / unknown no van en la ayuda: no son frases que el usuario “dispare”.
 CommandHelpId = Literal[
     "enable_japanese_mode",
@@ -40,6 +42,8 @@ CommandHelpId = Literal[
     "tv_open_youtube",
     "tv_open_netflix",
     "tv_search",
+    "ps5_power_on",
+    "ps5_power_off",
 ]
 
 
@@ -61,3 +65,5 @@ class DispatchResponse(BaseModel):
     turn: Optional[ConversationTurnResponse] = None
     practice_mode: Optional[PracticeMode] = None
     device_message: Optional[str] = None
+    # None = no es comando de dispositivo. True/False = tele o PS5 respondieron.
+    ok: Optional[bool] = None

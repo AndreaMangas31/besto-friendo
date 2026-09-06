@@ -16,6 +16,8 @@ export type CommandName =
   | "tv_open_youtube"
   | "tv_open_netflix"
   | "tv_search"
+  | "ps5_power_on"
+  | "ps5_power_off"
   | "unknown";
 
 export type DispatchResponse = {
@@ -24,11 +26,12 @@ export type DispatchResponse = {
   turn: ConversationTurnResponse | null;
   practice_mode: PracticeMode | null;
   device_message: string | null;
+  ok: boolean | null;
 };
 
 export type DispatchStatus = "idle" | "sending" | "ok" | "error";
 
-export type CommandHelpGroup = "tutor" | "tv";
+export type CommandHelpGroup = "tutor" | "tv" | "ps5";
 
 export type CommandHelpId = Exclude<CommandName, "japanese_turn" | "unknown">;
 
@@ -56,4 +59,9 @@ export const TV_COMMANDS: ReadonlySet<CommandName> = new Set([
   "tv_open_youtube",
   "tv_open_netflix",
   "tv_search",
+]);
+
+export const PS5_COMMANDS: ReadonlySet<CommandName> = new Set([
+  "ps5_power_on",
+  "ps5_power_off",
 ]);

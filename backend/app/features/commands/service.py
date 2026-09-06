@@ -8,6 +8,8 @@ from fastapi import UploadFile
 
 from app.features.commands.models import CommandName, DispatchResponse, PracticeMode
 from app.features.conversation.service import run_turn_from_text, transcribe_upload
+from app.features.ps5.service import power_off as ps5_power_off
+from app.features.ps5.service import power_on as ps5_power_on
 from app.features.tv.service import back as tv_back
 from app.features.tv.service import home as tv_home
 from app.features.tv.service import mute as tv_mute
@@ -17,6 +19,7 @@ from app.features.tv.service import play_pause as tv_play_pause
 from app.features.tv.service import power_off as tv_power_off
 from app.features.tv.service import power_on as tv_power_on
 from app.features.tv.service import search_on_screen as tv_search
+from app.features.tv.service import select_hdmi as tv_select_hdmi
 from app.features.tv.service import volume_down as tv_volume_down
 from app.features.tv.service import volume_up as tv_volume_up
 
@@ -90,6 +93,71 @@ def _detect_practice_mode(compact: str) -> Optional[PracticeMode]:
         return "corregir"
     if "convers" in compact:
         return "conversar"
+    return None
+
+
+def _has_ps5(compact: str) -> bool:
+    # Whisper parte "PS5" en "ps 5". "play" suelto es pausa/tutor; "la play" es la consola.
+    blob = _collapsed(compact)
+    if any(token in blob for token in ("playstation", "ps5", "consola")):
+        return True
+    if "play station" in compact or re.search(r"\bps\s*5\b", compact):
+        return True
+    return bool(re.search(r"\b(?:la|el)\s+play\b", compact))
+
+
+def _has_ps5_off_verb(compact: str) -> bool:
+    blob = _collapsed(compact)
+    if any(
+        token in compact
+        for token in ("turn off", "power off", "shut down", "stand by")
+    ):
+        return True
+    return any(
+        token in blob
+        for token in ("apaga", "apague", "apag", "duerme", "reposo", "standby", "sleep")
+    )
+
+
+def _has_ps5_on_verb(compact: str) -> bool:
+    blob = _collapsed(compact)
+    if any(token in compact for token in ("turn on", "power on")):
+        return True
+    return any(
+        token in blob
+        for token in (
+            "enciend",
+            "prende",
+            "wakeup",
+            "despert",
+            "wake",
+            "enable",
+            "enabl",
+        )
+    )
+
+
+def _is_ps5_power_on(compact: str) -> bool:
+    if not _has_ps5(compact):
+        return False
+    if _has_ps5_off_verb(compact) and not _has_ps5_on_verb(compact):
+        return False
+    if _has_ps5_on_verb(compact):
+        return True
+    return _has_name(compact)
+
+
+def _is_ps5_power_off(compact: str) -> bool:
+    if not _has_ps5(compact):
+        return False
+    return _has_ps5_off_verb(compact)
+
+
+def _detect_ps5_command(compact: str) -> Optional[CommandName]:
+    if _is_ps5_power_on(compact):
+        return "ps5_power_on"
+    if _is_ps5_power_off(compact):
+        return "ps5_power_off"
     return None
 
 
@@ -319,6 +387,10 @@ def detect_command(
     if _is_disable_japanese(compact):
         return "disable_japanese_mode", None
 
+    ps5_command = _detect_ps5_command(compact)
+    if ps5_command:
+        return ps5_command, None
+
     tv_command = _detect_tv_command(compact)
     if tv_command:
         return tv_command, None
@@ -368,6 +440,46 @@ async def dispatch(
         turn = await run_turn_from_text(transcript, history_json, mode)
         return DispatchResponse(command=command, transcript=transcript, turn=turn)
 
+    if command == "ps5_power_on":
+        started = time.perf_counter()
+        result = await asyncio.to_thread(ps5_power_on)
+        hdmi = await tv_select_hdmi(1)
+        logger.info(
+            "PS5 command=%s ok=%s stt_ms=%.0f ps5_ms=%.0f hdmi_ok=%s message=%s hdmi=%s",
+            command,
+            result.ok,
+            stt_ms,
+            (time.perf_counter() - started) * 1000,
+            hdmi.ok,
+            result.message,
+            hdmi.message,
+        )
+        extra = f" {hdmi.message}" if hdmi.message else ""
+        return DispatchResponse(
+            command=command,
+            transcript=transcript,
+            device_message=f"{result.message}{extra}".strip(),
+            ok=result.ok,
+        )
+
+    if command == "ps5_power_off":
+        started = time.perf_counter()
+        result = await ps5_power_off()
+        logger.info(
+            "PS5 command=%s ok=%s stt_ms=%.0f ps5_ms=%.0f message=%s",
+            command,
+            result.ok,
+            stt_ms,
+            (time.perf_counter() - started) * 1000,
+            result.message,
+        )
+        return DispatchResponse(
+            command=command,
+            transcript=transcript,
+            device_message=result.message,
+            ok=result.ok,
+        )
+
     if command == "tv_power_on":
         tv_started = time.perf_counter()
         result = await asyncio.to_thread(tv_power_on)
@@ -383,6 +495,7 @@ async def dispatch(
             command=command,
             transcript=transcript,
             device_message=result.message,
+            ok=result.ok,
         )
 
     if command == "tv_search":
@@ -402,6 +515,7 @@ async def dispatch(
             command=command,
             transcript=transcript,
             device_message=result.message,
+            ok=result.ok,
         )
 
     action = _TV_REMOTE_ACTIONS.get(command)
@@ -420,6 +534,7 @@ async def dispatch(
             command=command,
             transcript=transcript,
             device_message=result.message,
+            ok=result.ok,
         )
 
     return DispatchResponse(

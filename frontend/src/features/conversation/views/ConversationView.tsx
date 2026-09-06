@@ -1,11 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { BestoFriendoSuccessAnimation } from "@/features/conversation/components/BestoFriendoSuccessAnimation";
 import { ChatPanel } from "@/features/conversation/components/ChatPanel";
 import { ShellParticles } from "@/features/conversation/components/ShellParticles";
-import { TalkButton } from "@/features/conversation/components/TalkButton";
 import { TutorStage } from "@/features/conversation/components/TutorStage";
 import { useAudioRecorder } from "@/features/conversation/hooks/useAudioRecorder";
 import { useDispatchCommand } from "@/features/conversation/hooks/useDispatchCommand";
@@ -43,6 +42,9 @@ const MODE_LABEL: Record<PracticeMode, string> = {
   corregir: "Corregir",
   ideas: "Darme ideas",
 };
+
+/** Duración de la marca OOPS antes de abrir el micro (un ciclo de orb-confused-mark). */
+const OOPS_MS = 550;
 
 function modeNotice(mode: PracticeMode): ChatMessage {
   return {
@@ -88,9 +90,19 @@ export function ConversationView() {
   const [lunaOn, setLunaOn] = useState(searchParams.get("luna") === "1");
   const [lunaPlayKey, setLunaPlayKey] = useState(0);
   const [heatingMood, setHeatingMood] = useState<HeatingMood>(orbPreview.mood);
+  const [oopsing, setOopsing] = useState(false);
+  const oopsTimerRef = useRef<number | null>(null);
 
   const clearSuccessAnimation = useCallback(() => {
     setSuccessPlayKey(null);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (oopsTimerRef.current !== null) {
+        window.clearTimeout(oopsTimerRef.current);
+      }
+    };
   }, []);
 
   const playLuna = useCallback(() => {
@@ -126,9 +138,11 @@ export function ConversationView() {
     ? "listening"
     : isSending
       ? "thinking"
-      : confused
-        ? "confused"
-        : "idle";
+      : oopsing
+        ? "oops"
+        : confused
+          ? "confused"
+          : "idle";
 
   function openJapaneseChat() {
     setConfused(false);
@@ -301,6 +315,25 @@ export function ConversationView() {
     void handleTalkClick();
   };
 
+  function handleOrbPress() {
+    if (isSending || oopsing) {
+      return;
+    }
+    if (isRecording) {
+      talk();
+      return;
+    }
+
+    cancelSpeech();
+    setConfused(false);
+    setOopsing(true);
+    oopsTimerRef.current = window.setTimeout(() => {
+      oopsTimerRef.current = null;
+      setOopsing(false);
+      void recorder.start();
+    }, OOPS_MS);
+  }
+
   return (
     <div
       className="conversation-shell flex min-h-dvh min-w-0 max-w-full flex-1 flex-col overflow-x-hidden text-zinc-900"
@@ -329,15 +362,12 @@ export function ConversationView() {
             luna={lunaOn}
             lunaPlayKey={lunaPlayKey}
             heatingMood={heatingMood}
+            onOrbPress={!japaneseEnabled ? handleOrbPress : undefined}
+            orbPressDisabled={isSending}
           />
 
           {!japaneseEnabled ? (
             <div className="mt-auto space-y-3 px-4 pb-8 sm:px-6">
-              <TalkButton
-                isRecording={isRecording}
-                disabled={isSending}
-                onClick={talk}
-              />
               {isSending ? (
                 <p className="text-center text-sm text-zinc-500">
                   Escuchando el comando…

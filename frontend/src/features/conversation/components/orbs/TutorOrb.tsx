@@ -24,6 +24,8 @@ type TutorOrbProps = {
   heatingMood?: HeatingMood;
   /** Más grande y como pieza central (pantalla idle). */
   hero?: boolean;
+  onPress?: () => void;
+  pressDisabled?: boolean;
 };
 
 function LunaTail() {
@@ -57,6 +59,8 @@ export function TutorOrb({
   lunaPlayKey = 0,
   heatingMood = "cold",
   hero = false,
+  onPress,
+  pressDisabled = false,
 }: TutorOrbProps) {
   const variant = ORB_VARIANTS[persona];
   const Scene = variant.Scene;
@@ -64,24 +68,49 @@ export function TutorOrb({
   const copy = luna
     ? { title: "LUNA", subtitle: "Guau guau.", icon: null }
     : variant.caption(activity, mood);
+  const pressLabel = activity === "listening" ? "Detener" : "Hablar";
+  const stageClass = `tutor-orb-stage tutor-orb-stage--${persona}${hero ? " tutor-orb-stage--hero" : ""}${onPress ? " tutor-orb-stage-press" : ""}`;
+  const stageBody = (
+    <>
+      <LunaTail key={`luna-tail-${lunaPlayKey}`} />
+      {activity === "thinking" ? <span className="tutor-orb-think-mark">?</span> : null}
+      {activity === "confused" ? (
+        <span className="tutor-orb-think-mark tutor-orb-confused-mark">???</span>
+      ) : null}
+      {activity === "oops" ? (
+        <span className="tutor-orb-think-mark tutor-orb-confused-mark">OOPS</span>
+      ) : null}
+      <Scene activity={activity} mood={mood} />
+      <LunaFace key={`luna-face-${lunaPlayKey}`} />
+    </>
+  );
 
   return (
     <div className={`flex flex-col items-center gap-4 ${hidden ? "invisible" : ""}`}>
-      <div
-        className={`tutor-orb-stage tutor-orb-stage--${persona}${hero ? " tutor-orb-stage--hero" : ""}`}
-        data-activity={activity}
-        data-luna={luna ? "on" : "off"}
-        data-mood={mood}
-        aria-hidden
-      >
-        <LunaTail key={`luna-tail-${lunaPlayKey}`} />
-        {activity === "thinking" ? <span className="tutor-orb-think-mark">?</span> : null}
-        {activity === "confused" ? (
-          <span className="tutor-orb-think-mark tutor-orb-confused-mark">???</span>
-        ) : null}
-        <Scene activity={activity} mood={mood} />
-        <LunaFace key={`luna-face-${lunaPlayKey}`} />
-      </div>
+      {onPress ? (
+        <button
+          type="button"
+          className={stageClass}
+          data-activity={activity}
+          data-luna={luna ? "on" : "off"}
+          data-mood={mood}
+          aria-label={pressLabel}
+          onClick={onPress}
+          disabled={pressDisabled}
+        >
+          {stageBody}
+        </button>
+      ) : (
+        <div
+          className={stageClass}
+          data-activity={activity}
+          data-luna={luna ? "on" : "off"}
+          data-mood={mood}
+          aria-hidden
+        >
+          {stageBody}
+        </div>
+      )}
 
       <div className="flex flex-col items-center gap-1 text-center">
         <div className="flex items-center gap-2">

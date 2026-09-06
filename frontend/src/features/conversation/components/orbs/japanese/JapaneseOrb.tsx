@@ -52,6 +52,9 @@ function caption(activity: OrbActivity): OrbCaption {
   if (activity === "confused") {
     return { title: "JAPANESE MODE", subtitle: "Ehhh??? No te pillo.", icon };
   }
+  if (activity === "oops") {
+    return { title: "JAPANESE MODE", subtitle: "OOPS. ¡Ey!", icon };
+  }
   return {
     title: "JAPANESE MODE",
     subtitle: "Modo japonés activo.",

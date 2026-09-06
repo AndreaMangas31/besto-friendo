@@ -21,6 +21,8 @@ type TutorStageProps = {
   luna?: boolean;
   lunaPlayKey?: number;
   heatingMood?: HeatingMood;
+  onOrbPress?: () => void;
+  orbPressDisabled?: boolean;
 };
 
 export function TutorStage({
@@ -33,6 +35,8 @@ export function TutorStage({
   luna = false,
   lunaPlayKey = 0,
   heatingMood = "cold",
+  onOrbPress,
+  orbPressDisabled = false,
 }: TutorStageProps) {
   const catalog = useCommandCatalog();
 
@@ -53,7 +57,7 @@ export function TutorStage({
           <p className="mx-auto max-w-sm wrap-break-word px-1 text-zinc-600">
             {japaneseEnabled
               ? "Tutor de japonés. Habla o cambia de modo con la voz o los botones."
-              : "Pulsa el menú para ver qué puedes hacer."}
+              : "Pulsa el orbe para hablar. El menú lista lo que puedes hacer."}
           </p>
         </div>
       </div>
@@ -67,6 +71,8 @@ export function TutorStage({
           lunaPlayKey={lunaPlayKey}
           heatingMood={heatingMood}
           hero={!japaneseEnabled}
+          onPress={onOrbPress}
+          pressDisabled={orbPressDisabled}
         />
       </div>
 

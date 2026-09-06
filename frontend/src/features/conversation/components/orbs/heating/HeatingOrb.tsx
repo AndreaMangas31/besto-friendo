@@ -48,6 +48,9 @@ function caption(activity: OrbActivity, mood: HeatingMood = "cold"): OrbCaption 
   if (activity === "confused") {
     return { title: "HEAT MODE", subtitle: "Ehhh??? ¿Más calor o menos?", icon };
   }
+  if (activity === "oops") {
+    return { title: "HEAT MODE", subtitle: "OOPS. ¡Ey!", icon };
+  }
   if (mood === "warm") {
     return { title: "HEAT MODE", subtitle: "Ya calienta.", icon };
   }

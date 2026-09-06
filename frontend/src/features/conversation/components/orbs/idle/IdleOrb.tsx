@@ -56,6 +56,9 @@ function caption(activity: OrbActivity): OrbCaption {
   if (activity === "confused") {
     return { title: "EHHHH???", subtitle: "No te pillo.", icon: null };
   }
+  if (activity === "oops") {
+    return { title: "OOPS", subtitle: "¡Ey!", icon: null };
+  }
   return { title: "Tu BBFF", subtitle: null, icon: null };
 }
 

@@ -192,7 +192,8 @@
   animation: orb-think-glance 2.8s ease-in-out infinite;
 }
 
-.tutor-orb--tv[data-activity="confused"] .tutor-orb-tv-pupil {
+.tutor-orb--tv[data-activity="confused"] .tutor-orb-tv-pupil,
+.tutor-orb--tv[data-activity="oops"] .tutor-orb-tv-pupil {
   animation: orb-confused-glance 1.15s ease-in-out infinite;
 }
 

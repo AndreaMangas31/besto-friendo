@@ -40,7 +40,7 @@
   transition: background 0.55s ease;
 }
 
-/* Capa detrás del UI. pointer-events none: si no, tapa Hablar. */
+/* Capa detrás del UI. pointer-events none: si no, tapa el orbe clicable. */
 .conversation-shell-particles {
   position: absolute;
   inset: 0;

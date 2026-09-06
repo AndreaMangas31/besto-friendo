@@ -48,6 +48,9 @@ function caption(activity: OrbActivity): OrbCaption {
   if (activity === "confused") {
     return { title: "TV MODE", subtitle: "Ehhh??? No te pillo.", icon };
   }
+  if (activity === "oops") {
+    return { title: "TV MODE", subtitle: "OOPS. ¡Ey!", icon };
+  }
   return {
     title: "TV MODE",
     subtitle: "Modo sofá. Como WALL-E.",

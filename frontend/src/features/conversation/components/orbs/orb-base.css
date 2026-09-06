@@ -252,6 +252,19 @@
   height: min(22rem, 78vw);
 }
 
+/* El orbe es el botón de hablar: sin chrome de button nativo. */
+.tutor-orb-stage-press {
+  cursor: pointer;
+  border: none;
+  padding: 0;
+  background: transparent;
+  appearance: none;
+}
+
+.tutor-orb-stage-press:disabled {
+  cursor: not-allowed;
+}
+
 .tutor-orb-think-mark {
   position: absolute;
   z-index: 5;
@@ -314,8 +327,9 @@
   animation-duration: 8.5s;
 }
 
-/* Idle confundido: lila, que se note el “ehhh???”. */
-.tutor-orb.tutor-orb--idle[data-activity="confused"] {
+/* Idle confundido / OOPS: lila, que se note el “ehhh???”. */
+.tutor-orb.tutor-orb--idle[data-activity="confused"],
+.tutor-orb.tutor-orb--idle[data-activity="oops"] {
   background:
     radial-gradient(42% 38% at 32% 28%, rgba(250, 245, 255, 0.65) 0%, transparent 62%),
     radial-gradient(80% 80% at 50% 58%, #4c1d95 0%, #2e1065 55%, #c4b5fd 100%);

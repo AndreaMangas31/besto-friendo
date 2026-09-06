@@ -52,7 +52,11 @@ export async function apiGet<T>(path: string): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-export async function apiPostForm<T>(path: string, formData: FormData): Promise<T> {
+export async function apiPostForm<T>(
+  path: string,
+  formData: FormData,
+  signal?: AbortSignal,
+): Promise<T> {
   // No pongas Content-Type a mano: el navegador tiene que añadir el boundary
   // de multipart. Si lo fijas a multipart/form-data, FastAPI no parsea el archivo
   // (error típico: "there was an error parsing the body" / 422).
@@ -60,6 +64,7 @@ export async function apiPostForm<T>(path: string, formData: FormData): Promise<
     method: "POST",
     body: formData,
     headers: gateHeaders(),
+    signal,
   });
 
   if (!response.ok) {

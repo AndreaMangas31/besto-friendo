@@ -1,13 +1,36 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { apiPostForm, ApiError } from "@/shared/api/client";
 import type { DispatchResponse, DispatchStatus } from "@/features/conversation/types/commands";
 import type { ChatMessage, PracticeMode } from "@/features/conversation/types/turn";
 
+const DISPATCH_TIMEOUT_MS = 20_000;
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof DOMException
+    ? error.name === "AbortError"
+    : error instanceof Error && error.name === "AbortError";
+}
+
 export function useDispatchCommand() {
   const [status, setStatus] = useState<DispatchStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const controllerRef = useRef<AbortController | null>(null);
+  const timeoutRef = useRef<number | null>(null);
+  const abortKindRef = useRef<"user" | "timeout" | null>(null);
+
+  const clearTimeoutHandle = useCallback(() => {
+    if (timeoutRef.current !== null) {
+      window.clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+  }, []);
+
+  const cancel = useCallback(() => {
+    abortKindRef.current = "user";
+    controllerRef.current?.abort();
+  }, []);
 
   const send = useCallback(
     async (
@@ -16,6 +39,9 @@ export function useDispatchCommand() {
       japaneseEnabled: boolean,
       mode: PracticeMode,
     ): Promise<DispatchResponse | null> => {
+      abortKindRef.current = null;
+      const controller = new AbortController();
+      controllerRef.current = controller;
       setStatus("sending");
       setErrorMessage(null);
 
@@ -28,14 +54,31 @@ export function useDispatchCommand() {
         JSON.stringify(history.map(({ role, text }) => ({ role, text }))),
       );
 
+      // Groq a veces se queda: a los 20s cortamos el fetch para no dejar PENSANDO eterno.
+      timeoutRef.current = window.setTimeout(() => {
+        abortKindRef.current = "timeout";
+        controller.abort();
+      }, DISPATCH_TIMEOUT_MS);
+
       try {
         const data = await apiPostForm<DispatchResponse>(
           "/commands/dispatch",
           formData,
+          controller.signal,
         );
         setStatus("ok");
         return data;
       } catch (error: unknown) {
+        if (isAbortError(error)) {
+          if (abortKindRef.current === "user") {
+            setStatus("idle");
+            setErrorMessage(null);
+            return null;
+          }
+          setStatus("error");
+          setErrorMessage("Ha pasado demasiado tiempo.");
+          return null;
+        }
         setStatus("error");
         setErrorMessage(
           error instanceof ApiError
@@ -43,10 +86,15 @@ export function useDispatchCommand() {
             : "No se pudo interpretar el comando. ¿Está el backend arrancado?",
         );
         return null;
+      } finally {
+        clearTimeoutHandle();
+        if (controllerRef.current === controller) {
+          controllerRef.current = null;
+        }
       }
     },
-    [],
+    [clearTimeoutHandle],
   );
 
-  return { status, errorMessage, send };
+  return { status, errorMessage, send, cancel };
 }

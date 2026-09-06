@@ -6,7 +6,7 @@ import "./idle-orb.css";
 function IdleIcon({ activity }: { activity: OrbActivity }) {
   if (activity === "listening") {
     return (
-      <svg viewBox="0 0 24 16" className="h-4 w-6 text-sky-300" fill="currentColor" aria-hidden>
+      <svg viewBox="0 0 24 16" className="h-5 w-8 text-sky-500" fill="currentColor" aria-hidden>
         <rect x="1" y="6" width="2.2" height="4" rx="1" />
         <rect x="5.5" y="3" width="2.2" height="10" rx="1" />
         <rect x="10" y="0.5" width="2.2" height="15" rx="1" />
@@ -42,7 +42,7 @@ function caption(activity: OrbActivity): OrbCaption {
   if (activity === "listening") {
     return {
       title: "ESCUCHANDO",
-      subtitle: "Atento y receptivo.",
+      subtitle: "Te oigo. Pulsa otra vez para enviar.",
       icon: <IdleIcon activity={activity} />,
     };
   }

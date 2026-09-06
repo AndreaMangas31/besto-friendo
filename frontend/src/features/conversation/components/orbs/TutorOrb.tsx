@@ -26,6 +26,8 @@ type TutorOrbProps = {
   hero?: boolean;
   onPress?: () => void;
   pressDisabled?: boolean;
+  poked?: boolean;
+  pokeMark?: string | null;
 };
 
 function LunaTail() {
@@ -61,6 +63,8 @@ export function TutorOrb({
   hero = false,
   onPress,
   pressDisabled = false,
+  poked = false,
+  pokeMark = null,
 }: TutorOrbProps) {
   const variant = ORB_VARIANTS[persona];
   const Scene = variant.Scene;
@@ -73,12 +77,21 @@ export function TutorOrb({
   const stageBody = (
     <>
       <LunaTail key={`luna-tail-${lunaPlayKey}`} />
-      {activity === "thinking" ? <span className="tutor-orb-think-mark">?</span> : null}
-      {activity === "confused" ? (
+      {activity === "thinking" && !poked ? <span className="tutor-orb-think-mark">?</span> : null}
+      {activity === "confused" && !poked ? (
         <span className="tutor-orb-think-mark tutor-orb-confused-mark">???</span>
       ) : null}
-      {activity === "oops" ? (
-        <span className="tutor-orb-think-mark tutor-orb-confused-mark">OOPS</span>
+      {activity === "oops" || poked ? (
+        <span className="tutor-orb-think-mark tutor-orb-confused-mark tutor-orb-poke-mark">
+          {pokeMark ?? "OOPS"}
+        </span>
+      ) : null}
+      {activity === "listening" ? (
+        <>
+          <span className="tutor-orb-listen-ripple tutor-orb-listen-ripple--a" />
+          <span className="tutor-orb-listen-ripple tutor-orb-listen-ripple--b" />
+          <span className="tutor-orb-listen-ripple tutor-orb-listen-ripple--c" />
+        </>
       ) : null}
       <Scene activity={activity} mood={mood} />
       <LunaFace key={`luna-face-${lunaPlayKey}`} />
@@ -94,6 +107,7 @@ export function TutorOrb({
           data-activity={activity}
           data-luna={luna ? "on" : "off"}
           data-mood={mood}
+          data-poked={poked ? "1" : undefined}
           aria-label={pressLabel}
           onClick={onPress}
           disabled={pressDisabled}
@@ -106,18 +120,23 @@ export function TutorOrb({
           data-activity={activity}
           data-luna={luna ? "on" : "off"}
           data-mood={mood}
+          data-poked={poked ? "1" : undefined}
           aria-hidden
         >
           {stageBody}
         </div>
       )}
 
-      <div className="flex flex-col items-center gap-1 text-center">
+      <div className="flex flex-col items-center gap-1.5 text-center">
         <div className="flex items-center gap-2">
           {copy.icon}
-          <p className="text-sm font-semibold tracking-[0.18em] text-zinc-800">{copy.title}</p>
+          <p className="text-base font-semibold tracking-[0.18em] text-zinc-800 sm:text-lg">
+            {copy.title}
+          </p>
         </div>
-        {copy.subtitle ? <p className="text-xs text-zinc-500">{copy.subtitle}</p> : null}
+        {copy.subtitle ? (
+          <p className="text-sm text-zinc-500 sm:text-base">{copy.subtitle}</p>
+        ) : null}
       </div>
     </div>
   );

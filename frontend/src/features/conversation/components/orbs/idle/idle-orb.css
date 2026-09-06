@@ -12,12 +12,12 @@
     inset 0 -18px 28px rgba(46, 16, 101, 0.55);
 }
 
-.tutor-orb-stage--idle[data-activity="confused"] .tutor-orb-confused-mark,
-.tutor-orb-stage--idle[data-activity="oops"] .tutor-orb-confused-mark {
+.tutor-orb-stage--idle[data-activity="confused"] .tutor-orb-confused-mark:not(.tutor-orb-poke-mark) {
   color: #6d28d9;
 }
 
 .tutor-orb-stage--idle[data-activity="confused"] .tutor-orb-ring,
-.tutor-orb-stage--idle[data-activity="oops"] .tutor-orb-ring {
+.tutor-orb-stage--idle[data-activity="oops"] .tutor-orb-ring,
+.tutor-orb-stage--idle[data-poked="1"] .tutor-orb-ring {
   border-color: rgba(196, 181, 253, 0.55);
 }

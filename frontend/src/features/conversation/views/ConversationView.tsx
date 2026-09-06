@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { BestoFriendoSuccessAnimation } from "@/features/conversation/components/BestoFriendoSuccessAnimation";
+import { CancelButton } from "@/features/conversation/components/CancelButton";
 import { ChatPanel } from "@/features/conversation/components/ChatPanel";
 import { ShellParticles } from "@/features/conversation/components/ShellParticles";
 import { TutorStage } from "@/features/conversation/components/TutorStage";
@@ -45,6 +46,8 @@ const MODE_LABEL: Record<PracticeMode, string> = {
 
 /** Duración de la marca OOPS antes de abrir el micro (un ciclo de orb-confused-mark). */
 const OOPS_MS = 550;
+/** Squash + OOPS al pulsar (también en ESCUCHANDO, sin retrasar el envío). */
+const POKE_MS = 480;
 
 function modeNotice(mode: PracticeMode): ChatMessage {
   return {
@@ -91,7 +94,10 @@ export function ConversationView() {
   const [lunaPlayKey, setLunaPlayKey] = useState(0);
   const [heatingMood, setHeatingMood] = useState<HeatingMood>(orbPreview.mood);
   const [oopsing, setOopsing] = useState(false);
+  const [poked, setPoked] = useState(false);
+  const [pokeMark, setPokeMark] = useState<string | null>(null);
   const oopsTimerRef = useRef<number | null>(null);
+  const pokeTimerRef = useRef<number | null>(null);
 
   const clearSuccessAnimation = useCallback(() => {
     setSuccessPlayKey(null);
@@ -101,6 +107,9 @@ export function ConversationView() {
     return () => {
       if (oopsTimerRef.current !== null) {
         window.clearTimeout(oopsTimerRef.current);
+      }
+      if (pokeTimerRef.current !== null) {
+        window.clearTimeout(pokeTimerRef.current);
       }
     };
   }, []);
@@ -315,14 +324,38 @@ export function ConversationView() {
     void handleTalkClick();
   };
 
+  function flashPoke(mark: "OOPS" | "VOOOOY") {
+    setPokeMark(mark);
+    setPoked(true);
+    if (pokeTimerRef.current !== null) {
+      window.clearTimeout(pokeTimerRef.current);
+    }
+    pokeTimerRef.current = window.setTimeout(() => {
+      pokeTimerRef.current = null;
+      setPoked(false);
+      setPokeMark(null);
+    }, POKE_MS);
+  }
+
+  function handleCancelTurn() {
+    dispatcher.cancel();
+    setHint("Cortaste el turno.");
+  }
+
   function handleOrbPress() {
     if (isSending || oopsing) {
       return;
     }
+
     if (isRecording) {
+      flashPoke("VOOOOY");
+      setHint(null);
       talk();
       return;
     }
+
+    flashPoke("OOPS");
+    setHint(null);
 
     cancelSpeech();
     setConfused(false);
@@ -364,10 +397,13 @@ export function ConversationView() {
             heatingMood={heatingMood}
             onOrbPress={!japaneseEnabled ? handleOrbPress : undefined}
             orbPressDisabled={isSending}
+            poked={poked}
+            pokeMark={pokeMark}
           />
 
           {!japaneseEnabled ? (
             <div className="mt-auto space-y-3 px-4 pb-8 sm:px-6">
+              {isSending ? <CancelButton onClick={handleCancelTurn} /> : null}
               {isSending ? (
                 <p className="text-center text-sm text-zinc-500">
                   Escuchando el comando…
@@ -402,6 +438,7 @@ export function ConversationView() {
               dispatchError={dispatcher.errorMessage}
               notice={hint}
               onTalk={talk}
+              onCancel={handleCancelTurn}
               onReplay={speakJapanese}
             />
           </div>

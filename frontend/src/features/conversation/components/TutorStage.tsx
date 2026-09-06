@@ -23,6 +23,8 @@ type TutorStageProps = {
   heatingMood?: HeatingMood;
   onOrbPress?: () => void;
   orbPressDisabled?: boolean;
+  poked?: boolean;
+  pokeMark?: string | null;
 };
 
 export function TutorStage({
@@ -37,6 +39,8 @@ export function TutorStage({
   heatingMood = "cold",
   onOrbPress,
   orbPressDisabled = false,
+  poked = false,
+  pokeMark = null,
 }: TutorStageProps) {
   const catalog = useCommandCatalog();
 
@@ -73,6 +77,8 @@ export function TutorStage({
           hero={!japaneseEnabled}
           onPress={onOrbPress}
           pressDisabled={orbPressDisabled}
+          poked={poked}
+          pokeMark={pokeMark}
         />
       </div>
 

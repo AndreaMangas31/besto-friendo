@@ -51,7 +51,7 @@ Si el backend está parado, la página debe mostrar un error claro de conexión.
 El navegador **nunca** llama a `:8000` a pelo. Pide `/bf-api/...` al mismo Next ([`frontend/src/app/bf-api/[...path]/route.ts`](frontend/src/app/bf-api/[...path]/route.ts)).
 
 - **Local** (`pnpm dev`): `BACKEND_URL=http://localhost:8000` en `.env.local`, **sin** `BACKEND_WAKE_KEY`. Mac → Next :3000 → uvicorn :8000.
-- **Móvil / Vercel**: el JS pide `/bf-api` a `besto-friendo.vercel.app`. Secrets: `BACKEND_URL` (ngrok) y `BACKEND_WAKE_KEY` (igual que `BOOT_SECRET` del Mac). El Route Handler añade `X-Besto-Boot`. Nada de eso va al bundle.
+- **Móvil / Vercel**: el JS pide `/bf-api` a `besto-friendo.vercel.app`. Secrets: `BACKEND_URL` (ngrok), `BACKEND_WAKE_KEY` (igual que `BOOT_SECRET` del Mac) y `GATE_PASSWORD` (candado de la web; no `NEXT_PUBLIC_`). El Route Handler añade `X-Besto-Boot` solo si el token del teléfono es válido. Nada de eso va al bundle.
 
 En local, reinicia `pnpm dev` si cambias `.env.local`.
 
@@ -66,7 +66,7 @@ cd /Users/andream31/real-projects/besto-friendo
 
 Deja esa terminal abierta. En el teléfono: [https://besto-friendo.vercel.app](https://besto-friendo.vercel.app).
 
-Vercel Secrets: `BACKEND_URL=https://pug-stump-approve.ngrok-free.dev` y `BACKEND_WAKE_KEY` = `BOOT_SECRET`. Redeploy si cambias el front.
+Vercel Secrets: `BACKEND_URL=https://pug-stump-approve.ngrok-free.dev`, `BACKEND_WAKE_KEY` = `BOOT_SECRET`, y `GATE_PASSWORD` (puede ser distinta). Redeploy si cambias el front o un Secret.
 
 Al iniciar sesión (opcional):
 

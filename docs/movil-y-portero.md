@@ -44,6 +44,8 @@ Abres [https://besto-friendo.vercel.app](https://besto-friendo.vercel.app). No v
 
 La página pide rutas que empiezan por `/bf-api` (mismo sitio, mismo origen). Un Route Handler en el servidor ([`frontend/src/app/bf-api/[...path]/route.ts`](../frontend/src/app/bf-api/[...path]/route.ts)) reenvía eso a `BACKEND_URL` (ngrok) y pone el header `X-Besto-Boot` con `BACKEND_WAKE_KEY`. Esos valores son Secrets de Vercel, no van en el JS.
 
+Si `GATE_PASSWORD` está definido, primero pide esa clave. El teléfono guarda un token HMAC (`X-Besto-Gate`), no la contraseña. Sin token válido, `/bf-api` responde 401 y no llama a ngrok. En `localhost` deja `GATE_PASSWORD` vacío.
+
 ### Ngrok
 
 Puerta pública con hostname fijo (`pug-stump-approve.ngrok-free.dev`) hacia el Mac, puerto **7999** (el portero), no el 8000. Sin Mac despierto y sin ngrok, Vercel no llega a casa.
@@ -59,7 +61,7 @@ FastAPI de verdad (`app.main`), puerto **8000**: conversación, tele, el resto. 
 ## Paso a paso de una petición (móvil)
 
 1. Grabas o pulsas algo en el teléfono. El navegador pide `/bf-api/...` a Vercel.
-2. Vercel mira `BACKEND_URL` y `BACKEND_WAKE_KEY`, pone el header secreto y llama a ngrok.
+2. Vercel comprueba el token de la app (`GATE_PASSWORD`). Si vale, mira `BACKEND_URL` y `BACKEND_WAKE_KEY`, pone el header secreto y llama a ngrok.
 3. Ngrok mete esa llamada en tu Mac, al portero `:7999`.
 4. El portero mira el header. Si no coincide, responde 401 y se acaba.
 5. El portero mira si el tutor está despierto en `:8000`.

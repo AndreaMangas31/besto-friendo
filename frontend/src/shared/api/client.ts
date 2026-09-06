@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "@/shared/config/env";
+import { GATE_HEADER, readGateToken } from "@/shared/api/gateToken";
 
 export class ApiError extends Error {
   constructor(
@@ -8,6 +9,16 @@ export class ApiError extends Error {
     super(message);
     this.name = "ApiError";
   }
+}
+
+function gateHeaders(init?: HeadersInit): Headers {
+  // Token HMAC en localStorage; el servidor lo comprueba antes de hablar con el Mac.
+  const headers = new Headers(init);
+  const token = readGateToken();
+  if (token) {
+    headers.set(GATE_HEADER, token);
+  }
+  return headers;
 }
 
 async function readErrorMessage(response: Response): Promise<string> {
@@ -31,6 +42,7 @@ async function readErrorMessage(response: Response): Promise<string> {
 export async function apiGet<T>(path: string): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     cache: "no-store",
+    headers: gateHeaders(),
   });
 
   if (!response.ok) {
@@ -47,6 +59,7 @@ export async function apiPostForm<T>(path: string, formData: FormData): Promise<
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: "POST",
     body: formData,
+    headers: gateHeaders(),
   });
 
   if (!response.ok) {

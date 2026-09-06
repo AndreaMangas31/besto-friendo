@@ -1,4 +1,5 @@
 import { type NextRequest } from "next/server";
+import { GATE_HEADER, gateIsRequired, gateTokenOk } from "@/app/gate/lib";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -37,6 +38,14 @@ async function proxy(
   const { path } = await context.params;
   const suffix = (path ?? []).join("/");
   const dest = `${rawBase}/${suffix}${req.nextUrl.search}`;
+
+  // Sin token válido no se habla con ngrok (Vercel inyectaría el secreto del portero).
+  if (gateIsRequired() && !gateTokenOk(req.headers.get(GATE_HEADER))) {
+    return Response.json(
+      { detail: "Falta la contraseña de la app. Entra otra vez." },
+      { status: 401 },
+    );
+  }
 
   const headers = new Headers();
   const contentType = req.headers.get("content-type");

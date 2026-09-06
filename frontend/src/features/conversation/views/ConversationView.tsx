@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { BestoFriendoSuccessAnimation } from "@/features/conversation/components/BestoFriendoSuccessAnimation";
 import { ChatPanel } from "@/features/conversation/components/ChatPanel";
+import { ShellParticles } from "@/features/conversation/components/ShellParticles";
 import { TalkButton } from "@/features/conversation/components/TalkButton";
 import { TutorStage } from "@/features/conversation/components/TutorStage";
 import { useAudioRecorder } from "@/features/conversation/hooks/useAudioRecorder";
@@ -16,6 +18,7 @@ import {
   type OrbPersona,
 } from "@/features/conversation/types/orb";
 import type { ChatMessage, PracticeMode } from "@/features/conversation/types/turn";
+import "./conversation-shell.css";
 
 const GREETING: ChatMessage = {
   role: "assistant",
@@ -42,20 +45,40 @@ function modeNotice(mode: PracticeMode): ChatMessage {
   };
 }
 
+/** ?orb= en el primer paint; si va en useEffect el HTML (y el fondo) salen idle. */
+function orbPreviewFromParam(preview: string | null): {
+  persona: OrbPersona;
+  mood: HeatingMood;
+  japaneseEnabled: boolean;
+} {
+  if (preview === "japanese") {
+    return { persona: "japanese", mood: "cold", japaneseEnabled: true };
+  }
+  if (preview === "tv" || preview === "play" || preview === "heating") {
+    return { persona: preview, mood: "cold", japaneseEnabled: false };
+  }
+  if (preview === "heating-warm") {
+    return { persona: "heating", mood: "warm", japaneseEnabled: false };
+  }
+  return { persona: "idle", mood: "cold", japaneseEnabled: false };
+}
+
 export function ConversationView() {
+  const searchParams = useSearchParams();
+  const orbPreview = orbPreviewFromParam(searchParams.get("orb"));
   const recorder = useAudioRecorder();
   const dispatcher = useDispatchCommand();
   const { speakJapanese, bark, cancel: cancelSpeech } = useSpeechPlayback();
-  const [japaneseEnabled, setJapaneseEnabled] = useState(false);
-  const [orbPersona, setOrbPersona] = useState<OrbPersona>("idle");
+  const [japaneseEnabled, setJapaneseEnabled] = useState(orbPreview.japaneseEnabled);
+  const [orbPersona, setOrbPersona] = useState<OrbPersona>(orbPreview.persona);
   const [mode, setMode] = useState<PracticeMode>("conversar");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [hint, setHint] = useState<string | null>(null);
   const [successPlayKey, setSuccessPlayKey] = useState<number | null>(null);
   const [confused, setConfused] = useState(false);
-  const [lunaOn, setLunaOn] = useState(false);
+  const [lunaOn, setLunaOn] = useState(searchParams.get("luna") === "1");
   const [lunaPlayKey, setLunaPlayKey] = useState(0);
-  const [heatingMood, setHeatingMood] = useState<HeatingMood>("cold");
+  const [heatingMood, setHeatingMood] = useState<HeatingMood>(orbPreview.mood);
 
   const clearSuccessAnimation = useCallback(() => {
     setSuccessPlayKey(null);
@@ -74,15 +97,6 @@ export function ConversationView() {
     // ?burst=1 enseña el overlay sin mandar un comando a la tele/PS5.
     if (params.get("burst") === "1") {
       setSuccessPlayKey(1);
-    }
-    // ?orb=tv|play|japanese|heating|heating-warm para ver el personaje sin el dispositivo.
-    const preview = params.get("orb");
-    if (preview === "japanese" || preview === "tv" || preview === "play" || preview === "heating") {
-      setOrbPersona(preview);
-    }
-    if (preview === "heating-warm") {
-      setOrbPersona("heating");
-      setHeatingMood("warm");
     }
     // ?luna=1 enseña orejas + guau sin pasar por el micro.
     if (params.get("luna") === "1") {
@@ -265,9 +279,15 @@ export function ConversationView() {
   };
 
   return (
-    <div className="flex flex-1 flex-col bg-[#fbf7f2] text-zinc-900">
+    <div
+      className="conversation-shell flex min-h-full flex-1 flex-col text-zinc-900"
+      data-persona={orbPersona}
+      data-mood={heatingMood}
+      data-luna={lunaOn ? "on" : "off"}
+    >
+      <ShellParticles />
       <div
-        className={`mx-auto flex w-full flex-1 flex-col ${
+        className={`relative z-10 mx-auto flex w-full flex-1 flex-col ${
           japaneseEnabled ? "max-w-6xl md:flex-row" : "max-w-xl"
         }`}
       >

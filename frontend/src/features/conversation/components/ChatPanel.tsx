@@ -24,7 +24,7 @@ export function ChatPanel({
   onReplay,
 }: ChatPanelProps) {
   return (
-    <section className="flex min-h-[28rem] flex-1 flex-col rounded-3xl bg-[#f4f1ec] p-4 md:min-h-0">
+    <section className="conversation-shell-panel flex min-h-[28rem] flex-1 flex-col rounded-3xl p-4 md:min-h-0">
       <MessageList messages={messages} onReplay={onReplay} />
 
       <div className="mt-4 space-y-3">

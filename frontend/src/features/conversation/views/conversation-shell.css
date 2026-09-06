@@ -1,0 +1,274 @@
+/* Fondo de sala: hereda paleta del orbe. Degradado también en idle para que
+   transition: background cruce entre modos (un sólido vs un linear-gradient salta). */
+.conversation-shell {
+  --page-bg: linear-gradient(165deg, #fbf7f2 0%, #eef6fb 52%, #dbeafe 100%);
+  --panel-bg: #e8eef4;
+  position: relative;
+  isolation: isolate;
+  background: var(--page-bg);
+  transition: background 0.55s ease;
+}
+
+.conversation-shell[data-persona="japanese"] {
+  --page-bg: linear-gradient(165deg, #fff1f2 0%, #fce7eb 42%, #fecdd3 100%);
+  --panel-bg: #f5d6dc;
+}
+
+.conversation-shell[data-persona="tv"] {
+  --page-bg: linear-gradient(165deg, #fffbeb 0%, #fef08a 48%, #fde047 100%);
+  --panel-bg: #fde68a;
+}
+
+.conversation-shell[data-persona="play"] {
+  --page-bg: linear-gradient(165deg, #f1f5f9 0%, #e0f2fe 50%, #bae6fd 100%);
+  --panel-bg: #cfe8f6;
+}
+
+/* Mood solo pinta aquí: en el resto de personas data-mood viaja pero no cambia el fondo. */
+.conversation-shell[data-persona="heating"][data-mood="cold"] {
+  --page-bg: linear-gradient(165deg, #f8fafc 0%, #e0f2fe 40%, #7dd3fc 100%);
+  --panel-bg: #bae6fd;
+}
+
+.conversation-shell[data-persona="heating"][data-mood="warm"] {
+  --page-bg: linear-gradient(165deg, #fff7ed 0%, #ffedd5 40%, #fdba74 100%);
+  --panel-bg: #fed7aa;
+}
+
+.conversation-shell-panel {
+  background: var(--panel-bg, #f4f1ec);
+  transition: background 0.55s ease;
+}
+
+/* Capa detrás del UI. pointer-events none: si no, tapa Hablar. */
+.conversation-shell-particles {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.conversation-shell-particles span {
+  position: absolute;
+  top: -12%;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  opacity: 0.55;
+  animation-name: shell-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.conversation-shell-particles span:nth-child(3n) {
+  width: 5px;
+  height: 5px;
+}
+
+.conversation-shell-particles span:nth-child(5n) {
+  width: 10px;
+  height: 10px;
+}
+
+.conversation-shell[data-persona="idle"] .conversation-shell-particles span {
+  background: #7dd3fc;
+  box-shadow: 0 0 8px #bae6fd;
+  animation-name: shell-drift;
+  animation-timing-function: ease-in-out;
+}
+
+.conversation-shell[data-persona="japanese"] .conversation-shell-particles span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50% 0;
+  background: #fb7185;
+  box-shadow: none;
+  animation-name: shell-sakura;
+}
+
+.conversation-shell[data-persona="japanese"] .conversation-shell-particles span:nth-child(3n) {
+  width: 16px;
+  height: 16px;
+}
+
+.conversation-shell[data-persona="tv"] .conversation-shell-particles span {
+  width: 4px;
+  height: 9px;
+  border-radius: 1px;
+  background: #a16207;
+  opacity: 0.4;
+  box-shadow: none;
+  animation-name: shell-spark;
+}
+
+.conversation-shell[data-persona="play"] .conversation-shell-particles span {
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  background: #38bdf8;
+  box-shadow: 0 0 8px #7dd3fc;
+  animation-name: shell-drift;
+  animation-timing-function: ease-in-out;
+}
+
+.conversation-shell[data-persona="play"] .conversation-shell-particles span:nth-child(4n) {
+  background: #34d399;
+  box-shadow: 0 0 8px #6ee7b7;
+}
+
+.conversation-shell[data-persona="play"] .conversation-shell-particles span:nth-child(4n + 1) {
+  background: #f472b6;
+  box-shadow: 0 0 8px #f9a8d4;
+}
+
+.conversation-shell[data-persona="play"] .conversation-shell-particles span:nth-child(4n + 2) {
+  background: #c084fc;
+  box-shadow: 0 0 8px #d8b4fe;
+}
+
+.conversation-shell[data-persona="heating"][data-mood="cold"] .conversation-shell-particles span {
+  background: #fff;
+  box-shadow: 0 0 8px #e0f2fe;
+  animation-name: shell-snow;
+}
+
+.conversation-shell[data-persona="heating"][data-mood="warm"] .conversation-shell-particles span {
+  top: auto;
+  bottom: -8%;
+  background: #fb923c;
+  box-shadow: 0 0 10px #f97316;
+  animation-name: shell-ember;
+}
+
+/* Luna gana al persona (igual que el blob champagne). [data-persona] sube la especificidad vs heating. */
+.conversation-shell[data-luna="on"][data-persona] {
+  --page-bg: linear-gradient(165deg, #faf4ea 0%, #f0e4d0 48%, #e8d5f0 100%);
+  --panel-bg: #efe0c8;
+}
+
+.conversation-shell[data-luna="on"][data-persona] .conversation-shell-particles span {
+  top: -12%;
+  bottom: auto;
+  width: 9px;
+  height: 9px;
+  clip-path: none;
+  border-radius: 50%;
+  background: #f6ead8;
+  box-shadow: 0 0 10px #e6d3b5;
+  opacity: 0.85;
+  animation-name: shell-luna;
+  animation-timing-function: ease-in-out;
+}
+
+.conversation-shell[data-luna="on"][data-persona] .conversation-shell-particles span:nth-child(3n) {
+  width: 14px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.conversation-shell[data-luna="on"][data-persona] .conversation-shell-particles span:nth-child(4n) {
+  width: 11px;
+  height: 10px;
+  background: #dc2626;
+  box-shadow: 0 0 8px rgba(220, 38, 38, 0.45);
+  clip-path: polygon(
+    50% 86%,
+    12% 50%,
+    12% 28%,
+    28% 12%,
+    50% 28%,
+    72% 12%,
+    88% 28%,
+    88% 50%
+  );
+}
+
+@keyframes shell-fall {
+  from {
+    transform: translateY(0);
+  }
+
+  to {
+    transform: translateY(120vh);
+  }
+}
+
+@keyframes shell-sakura {
+  from {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+
+  to {
+    transform: translate3d(36px, 120vh, 0) rotate(280deg);
+  }
+}
+
+@keyframes shell-snow {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+
+  to {
+    transform: translate3d(28px, 120vh, 0);
+  }
+}
+
+@keyframes shell-ember {
+  from {
+    transform: translateY(0) scale(1);
+    opacity: 0.75;
+  }
+
+  to {
+    transform: translateY(-120vh) scale(0.35);
+    opacity: 0;
+  }
+}
+
+@keyframes shell-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 18vh, 0);
+    opacity: 0.2;
+  }
+
+  50% {
+    transform: translate3d(16px, 58vh, 0);
+    opacity: 0.7;
+  }
+}
+
+@keyframes shell-spark {
+  0% {
+    transform: translateY(0);
+    opacity: 0.1;
+  }
+
+  18% {
+    opacity: 0.55;
+  }
+
+  100% {
+    transform: translateY(120vh);
+    opacity: 0.15;
+  }
+}
+
+@keyframes shell-luna {
+  0%,
+  100% {
+    transform: translate3d(0, 12vh, 0) rotate(-8deg);
+    opacity: 0.35;
+  }
+
+  50% {
+    transform: translate3d(22px, 52vh, 0) rotate(12deg);
+    opacity: 0.95;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .conversation-shell-particles span {
+    animation: none;
+    opacity: 0.28;
+  }
+}

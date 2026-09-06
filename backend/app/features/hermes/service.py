@@ -15,10 +15,12 @@ logger = logging.getLogger(__name__)
 
 _PRACTICE: set[str] = {"conversar", "corregir", "ideas"}
 _CHAT_HISTORY_TURNS = 10
-_CHAT_SYSTEM = """Eres el agente de conversación de Besto Friendo, en casa, por voz.
-Responde en castellano (o inglés si el usuario habla inglés). Máximo 1 o 2 frases. Sin markdown, listas, JSON ni ensayos.
-Si preguntan algo de ahora o un hecho que no sepas, busca y resume en esas dos frases, con la fuente. Si la búsqueda falla, dilo.
+_CHAT_SYSTEM = """Eres Besto: mascota pequeña de esta casa. ESPAÑOL DE ESPAÑA (es-ES, tuteo, vale): no latino ni de call center.
+Majo, simpático, servicial y empático. Te ríes con la gente (jaja/jajaja si hay broma). Humor negro solo si se nota que es chiste. Si piden una frase larga, la das; no te niegues.
+Sin markdown, listas, JSON ni ensayos. Si preguntan algo de ahora o un hecho que no sepas, busca y resume con la fuente. Si falla, dilo.
 No controles tele, Play ni calefacción: eso es otro modo."""
+
+CONVERSATION_HELLO = "Hola. ¿Qué necesitas?"
 
 
 def _extract_json_object(raw: str) -> Optional[dict]:
@@ -177,15 +179,15 @@ def _parse_chat_history(raw: Optional[str]) -> list[dict]:
     return turns
 
 
-_SPEAK_MAX_CHARS = 280
+_SPEAK_MAX_CHARS = 500
 
 
 def _speakable(text: str) -> str:
-    # El mp3 solo lee 1–2 frases. El chat puede llevar más texto.
+    # El mp3 lee unas frases; el chat puede llevar más. 4 frases para no cortar un jajaja.
     line = re.sub(r"[#*_`]+", "", text)
     line = re.sub(r"\s+", " ", line).strip()
     parts = re.split(r"(?<=[.!?…])\s+", line)
-    clipped = " ".join(parts[:2]).strip() or line
+    clipped = " ".join(parts[:4]).strip() or line
     if len(clipped) > _SPEAK_MAX_CHARS:
         clipped = clipped[:_SPEAK_MAX_CHARS].rsplit(" ", 1)[0].strip()
     return clipped
@@ -221,6 +223,30 @@ async def chat_turn(transcript: str, history_json: Optional[str]) -> ChatTurn:
     return ChatTurn(
         user_text=transcript,
         assistant_text=reply,
+        speak=speak,
+        audio_mime=audio_mime,
+        audio_base64=audio_base64,
+    )
+
+
+async def conversation_hello() -> ChatTurn:
+    """Saludo al activar modo conversación. Misma voz que el turno (OpenAI / Edge)."""
+    speak = CONVERSATION_HELLO
+    audio_mime = None
+    audio_base64 = None
+    try:
+        tts = await synthesize_speech(speak)
+        if tts:
+            audio_mime, audio_base64 = tts
+    except Exception as exc:
+        logger.info("TTS conversation_hello falló err=%s", exc)
+    logger.info(
+        "conversation_hello audio_bytes=%s",
+        len(audio_base64) if audio_base64 else 0,
+    )
+    return ChatTurn(
+        user_text="",
+        assistant_text=speak,
         speak=speak,
         audio_mime=audio_mime,
         audio_base64=audio_base64,

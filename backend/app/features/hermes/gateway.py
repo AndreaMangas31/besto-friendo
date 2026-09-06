@@ -1,7 +1,7 @@
 import logging
 from typing import Optional, Sequence
 
-from openai import AsyncOpenAI
+from openai import APIConnectionError, APITimeoutError, AsyncOpenAI
 
 from app.core.config import settings
 from app.shared.ai.factory import get_ai_provider
@@ -33,11 +33,16 @@ async def complete(
             base_url=url,
             timeout=timeout_sec or 90.0,
         )
-        result = await client.chat.completions.create(
-            model="hermes-agent",
-            messages=list(messages),
-            temperature=temperature,
-        )
+        try:
+            result = await client.chat.completions.create(
+                model="hermes-agent",
+                messages=list(messages),
+                temperature=temperature,
+            )
+        except (APIConnectionError, APITimeoutError) as exc:
+            # Sidecar :8642 caído (p. ej. tras hermes gateway restart). Sin internet, pero hay respuesta.
+            logger.info("Hermes caído err=%s; chat_turn usa Groq", exc)
+            return await complete_groq(messages, temperature=temperature)
         return (result.choices[0].message.content or "").strip()
 
     logger.info("Hermes URL vacía; chat_turn usa Groq (sin web search)")

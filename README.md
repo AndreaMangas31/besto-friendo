@@ -62,14 +62,15 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-En `backend/.env`: `GROQ_API_KEY=gsk_...` (https://console.groq.com/keys). Si falta, el backend responde 503.
+En `backend/.env`: `GROQ_API_KEY=gsk_...` (https://console.groq.com/keys). Si falta, el backend responde 503. Opcional: `OPENAI_API_KEY` para la voz del chat (`gpt-4o-mini-tts`); sin ella o si OpenAI falla, Edge.
 
 Opcional — modo conversación con internet (sidecar Hermes):
 
 - `~/.hermes/.env`: `API_SERVER_ENABLED=true` y `API_SERVER_KEY`
 - `backend/.env`: `HERMES_API_URL=http://127.0.0.1:8642` y `HERMES_API_KEY` igual que esa key
 - Toolset **web** (`web_search`, `web_extract`) en el API server. Sin terminal ni archivos. Nous Portal (`hermes setup --portal`) o keys tipo `FIRECRAWL` / `TAVILY`.
-- Skill de voz: `./scripts/install-hermes-spoken-chat.sh` (copia [`spoken-chat/SKILL.md`](backend/app/features/hermes/agent_skills/spoken-chat/SKILL.md) a `~/.hermes`)
+- Skill + SOUL del anfitrión: `./scripts/install-hermes-spoken-chat.sh` (copia skill y `SOUL.md` a `~/.hermes`; el SOUL anterior queda en `SOUL.md.bak-besto`)
+- El audio de cada **respuesta** lo manda el backend: `OPENAI_API_KEY` → `gpt-4o-mini-tts` (voz `nova`, crío pequeño); si falta o falla (p. ej. 429), Edge. Los “un momento / a ver” son mp3 locales de la misma voz (`scripts/generate-conversation-fillers.py`). El tope de dinero es un **hard monthly limit** en un proyecto de OpenAI, no una env.
 - `hermes gateway restart` (un solo proceso en `:8642`)
 
 Sin URL Hermes, el modo conversación habla por Groq **sin** buscar en internet. El router de casa (`unknown`) **siempre** usa Groq.
@@ -80,7 +81,7 @@ uvicorn app.main:app --reload --port 8000
 
 Comprueba: http://localhost:8000/health
 
-`--reload` recarga código; un cambio en `.env` pide reiniciar uvicorn.
+`--reload` recarga código. Guardar `backend/.env` también recarga el proceso (uvicorn no vigila dotfiles; el backend toca un `.py` de marca).
 
 ### Frontend
 

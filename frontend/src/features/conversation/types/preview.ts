@@ -28,7 +28,7 @@ export function modeNotice(mode: PracticeMode): ChatMessage {
 
 export const CHAT_GREETING: ChatMessage = {
   role: "assistant",
-  text: "Hola. Pregúntame lo que quieras. Si es de ahora, miro internet.",
+  text: "Hola. ¿Qué necesitas?",
 };
 
 /** ?orb= en el primer paint; si va en useEffect el HTML (y el fondo) salen idle. */

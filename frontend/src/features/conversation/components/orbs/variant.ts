@@ -8,6 +8,6 @@ export type OrbCaption = {
 };
 
 export type OrbVariant = {
-  Scene: () => ReactNode;
+  Scene: (props: { activity: OrbActivity }) => ReactNode;
   caption: (activity: OrbActivity) => OrbCaption;
 };

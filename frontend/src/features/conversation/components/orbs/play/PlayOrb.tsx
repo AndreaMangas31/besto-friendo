@@ -1,4 +1,5 @@
 import { OrbEyes } from "@/features/conversation/components/orbs/OrbEyes";
+import type { OrbActivity } from "@/features/conversation/types/orb";
 import type { OrbCaption, OrbVariant } from "@/features/conversation/components/orbs/variant";
 import "./play-orb.css";
 
@@ -11,26 +12,33 @@ function PlayStationMark({ className }: { className?: string }) {
   );
 }
 
-function Scene() {
+function Scene({ activity }: { activity: OrbActivity }) {
   return (
     <>
       <span className="tutor-orb-ps-btn tutor-orb-ps-btn--triangle">△</span>
       <span className="tutor-orb-ps-btn tutor-orb-ps-btn--circle">○</span>
       <span className="tutor-orb-ps-btn tutor-orb-ps-btn--cross">✕</span>
       <span className="tutor-orb-ps-btn tutor-orb-ps-btn--square">□</span>
-      <div className="tutor-orb tutor-orb--play">
+      <div className="tutor-orb tutor-orb--play" data-activity={activity}>
         <span className="tutor-orb-astro-visor" />
-        <OrbEyes variant="play" />
+        <OrbEyes variant="play" activity={activity} />
       </div>
     </>
   );
 }
 
-function caption(): OrbCaption {
+function caption(activity: OrbActivity): OrbCaption {
+  const icon = <PlayStationMark className="h-4 w-8 text-sky-300" />;
+  if (activity === "listening") {
+    return { title: "PLAY MODE", subtitle: "Astro te oye.", icon };
+  }
+  if (activity === "thinking") {
+    return { title: "PLAY MODE", subtitle: "Calculando el combo…", icon };
+  }
   return {
     title: "PLAY MODE",
     subtitle: "Astro listo. A jugar.",
-    icon: <PlayStationMark className="h-4 w-8 text-sky-300" />,
+    icon,
   };
 }
 

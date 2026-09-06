@@ -31,7 +31,7 @@ export function TutorOrb({
   return (
     <div className={`flex flex-col items-center gap-4 ${hidden ? "invisible" : ""}`}>
       <div className={`tutor-orb-stage tutor-orb-stage--${persona}`} aria-hidden>
-        <Scene />
+        <Scene activity={activity} />
       </div>
 
       <div className="flex flex-col items-center gap-1 text-center">

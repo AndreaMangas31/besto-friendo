@@ -1,29 +1,215 @@
+@keyframes orb-tv-blink {
+  0%,
+  90%,
+  100% {
+    transform: scaleY(1);
+  }
+  94% {
+    transform: scaleY(0.12);
+  }
+}
+
 .tutor-orb.tutor-orb--tv {
+  overflow: hidden;
+  /* Amarillo industrial, no óxido oscuro. */
   background:
-    radial-gradient(42% 38% at 32% 28%, rgba(255, 247, 237, 0.45) 0%, transparent 62%),
-    radial-gradient(80% 80% at 50% 58%, #431407 0%, #1c0f08 55%, #fb923c 100%);
+    radial-gradient(38% 32% at 28% 20%, rgba(255, 255, 255, 0.75) 0%, transparent 52%),
+    radial-gradient(85% 85% at 50% 55%, #fde047 0%, #eab308 48%, #ca8a04 100%);
   box-shadow:
-    0 0 0 1px rgba(251, 146, 60, 0.4),
-    0 18px 50px rgba(249, 115, 22, 0.4),
-    inset 0 -18px 28px rgba(40, 16, 4, 0.55);
+    0 0 0 1px rgba(161, 98, 7, 0.4),
+    0 16px 36px rgba(202, 138, 4, 0.35),
+    inset 0 -14px 20px rgba(113, 63, 18, 0.28);
 }
 
-.tutor-orb-eye.tutor-orb-eye--tv {
+/* Pupila negra centrada en cada caja. */
+.tutor-orb-tv-pupil {
+  position: absolute;
+  top: 18%;
+  left: 22%;
+  width: 56%;
+  height: 64%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 28%, #3f3f46 0%, #09090b 58%);
+  transform-origin: 50% 50%;
+  animation: orb-tv-blink 4.4s ease-in-out infinite;
+}
+
+.tutor-orb-tv-goggle--right .tutor-orb-tv-pupil {
+  left: auto;
+  right: 22%;
+}
+
+.tutor-orb-tv-halo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 108%;
+  height: 48%;
+  border: 1.5px solid rgba(253, 186, 116, 0.22);
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%) rotate(-8deg);
+}
+
+/* Prismáticos: cajas horizontales, sin el giro que las dejaba en rombo. */
+.tutor-orb-tv-goggle {
+  position: absolute;
+  z-index: 2;
+  top: 26%;
+  width: 46%;
+  height: 36%;
+  border-radius: 0.45rem;
+  background: linear-gradient(180deg, #d4d4d8 0%, #a1a1aa 55%, #71717a 100%);
+  border: 4px solid #52525b;
+  box-shadow:
+    0 2px 0 #3f3f46,
+    inset 0 0 0 3px #e4e4e7;
+  pointer-events: none;
+}
+
+.tutor-orb-tv-goggle--left {
+  left: 4%;
+}
+
+.tutor-orb-tv-goggle--right {
+  right: 4%;
+}
+
+.tutor-orb-tv-bridge {
+  position: absolute;
+  z-index: 3;
   top: 42%;
+  left: 40%;
+  width: 20%;
   height: 12%;
-  width: 16%;
-  opacity: 0.92;
+  background: #52525b;
+  border-radius: 3px;
 }
 
-.tutor-orb-ring--tv {
-  width: 96%;
+.tutor-orb-tv-stripe {
+  position: absolute;
+  z-index: 1;
+  bottom: 18%;
+  width: 18%;
+  height: 12%;
+  background: repeating-linear-gradient(
+    -45deg,
+    #111827 0 5px,
+    #fafafa 5px 10px
+  );
+  opacity: 0.9;
+}
+
+.tutor-orb-tv-stripe--left {
+  left: 10%;
+}
+
+.tutor-orb-tv-stripe--right {
+  right: 10%;
+}
+
+.tutor-orb-tv-neck {
+  position: absolute;
+  left: 42%;
+  right: 42%;
+  bottom: 16%;
+  height: 10%;
+  border-radius: 3px;
+  background: repeating-linear-gradient(
+    180deg,
+    #eab308 0 4px,
+    #ca8a04 4px 6px
+  );
+}
+
+.tutor-orb-tv-tread {
+  position: absolute;
+  bottom: 4%;
+  width: 22%;
+  height: 18%;
+  border-radius: 3px;
+  background: repeating-linear-gradient(
+    90deg,
+    #27272a 0 5px,
+    #3f3f46 5px 8px
+  );
+  box-shadow: 0 3px 6px rgba(24, 24, 27, 0.35);
+}
+
+.tutor-orb-tv-tread--left {
+  left: 14%;
+}
+
+.tutor-orb-tv-tread--right {
+  right: 14%;
+}
+
+.tutor-orb-tv-plant {
+  position: absolute;
+  right: 1%;
+  bottom: 16%;
+  width: 1.4rem;
+  height: 2.1rem;
+}
+
+.tutor-orb-tv-boot {
+  position: absolute;
+  bottom: 0;
+  left: 15%;
+  width: 70%;
+  height: 38%;
+  border-radius: 2px 6px 4px 2px;
+  background: #57534e;
+}
+
+.tutor-orb-tv-leaf {
+  position: absolute;
+  left: 28%;
+  bottom: 28%;
+  width: 42%;
+  height: 58%;
+  border-radius: 80% 0 80% 0;
+  background: #4ade80;
+  transform: rotate(-18deg);
+}
+
+.tutor-orb--tv[data-activity="listening"] .tutor-orb-tv-goggle {
+  top: 22%;
   height: 42%;
-  border-color: rgba(251, 146, 60, 0.4);
-  animation: orb-ring-spin 16s linear infinite;
+}
+
+.tutor-orb--tv[data-activity="listening"] .tutor-orb-tv-pupil {
+  animation: none;
+  top: 12%;
+  height: 74%;
+}
+
+.tutor-orb--tv[data-activity="listening"] .tutor-orb-tv-bridge {
+  top: 40%;
+}
+
+.tutor-orb--tv[data-activity="thinking"] .tutor-orb-tv-goggle {
+  top: 30%;
+  height: 28%;
+}
+
+.tutor-orb--tv[data-activity="thinking"] .tutor-orb-tv-pupil {
+  animation: none;
+  top: 6%;
+  height: 48%;
+}
+
+.tutor-orb--tv[data-activity="thinking"] .tutor-orb-tv-goggle--right .tutor-orb-tv-pupil {
+  top: 30%;
+  left: 38%;
+}
+
+.tutor-orb--tv[data-activity="thinking"] .tutor-orb-tv-bridge {
+  top: 40%;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .tutor-orb-ring--tv {
+  .tutor-orb-tv-pupil {
     animation: none;
   }
 }

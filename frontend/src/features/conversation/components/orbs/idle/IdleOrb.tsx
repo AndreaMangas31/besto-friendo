@@ -26,13 +26,13 @@ function IdleIcon({ activity }: { activity: OrbActivity }) {
   return null;
 }
 
-function Scene() {
+function Scene({ activity }: { activity: OrbActivity }) {
   return (
     <>
       <span className="tutor-orb-ring tutor-orb-ring--a" />
       <span className="tutor-orb-ring tutor-orb-ring--b" />
-      <div className="tutor-orb tutor-orb--idle">
-        <OrbEyes variant="idle" />
+      <div className="tutor-orb tutor-orb--idle" data-activity={activity}>
+        <OrbEyes variant="idle" activity={activity} />
       </div>
     </>
   );

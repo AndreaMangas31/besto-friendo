@@ -14,6 +14,8 @@ type TutorStageProps = {
   mode: PracticeMode;
   onModeChange: (mode: PracticeMode) => void;
   hideOrb?: boolean;
+  luna?: boolean;
+  lunaPlayKey?: number;
 };
 
 export function TutorStage({
@@ -23,6 +25,8 @@ export function TutorStage({
   mode,
   onModeChange,
   hideOrb = false,
+  luna = false,
+  lunaPlayKey = 0,
 }: TutorStageProps) {
   const catalog = useCommandCatalog();
 
@@ -46,7 +50,13 @@ export function TutorStage({
         </p>
       </div>
 
-      <TutorOrb persona={persona} activity={activity} hidden={hideOrb} />
+      <TutorOrb
+        persona={persona}
+        activity={activity}
+        hidden={hideOrb}
+        luna={luna}
+        lunaPlayKey={lunaPlayKey}
+      />
 
       {japaneseEnabled ? (
         <PracticeModes value={mode} onChange={onModeChange} />

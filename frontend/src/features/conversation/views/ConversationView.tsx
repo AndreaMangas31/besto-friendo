@@ -40,7 +40,7 @@ function modeNotice(mode: PracticeMode): ChatMessage {
 export function ConversationView() {
   const recorder = useAudioRecorder();
   const dispatcher = useDispatchCommand();
-  const speech = useSpeechPlayback();
+  const { speakJapanese, bark, cancel: cancelSpeech } = useSpeechPlayback();
   const [japaneseEnabled, setJapaneseEnabled] = useState(false);
   const [orbPersona, setOrbPersona] = useState<OrbPersona>("idle");
   const [mode, setMode] = useState<PracticeMode>("conversar");
@@ -48,10 +48,20 @@ export function ConversationView() {
   const [hint, setHint] = useState<string | null>(null);
   const [successPlayKey, setSuccessPlayKey] = useState<number | null>(null);
   const [confused, setConfused] = useState(false);
+  const [lunaOn, setLunaOn] = useState(false);
+  const [lunaPlayKey, setLunaPlayKey] = useState(0);
 
   const clearSuccessAnimation = useCallback(() => {
     setSuccessPlayKey(null);
   }, []);
+
+  const playLuna = useCallback(() => {
+    setConfused(false);
+    setLunaPlayKey((current) => current + 1);
+    setLunaOn(true);
+    bark();
+    setHint("Luna te ha oído. Guau.");
+  }, [bark]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -64,7 +74,11 @@ export function ConversationView() {
     if (preview === "japanese" || preview === "tv" || preview === "play") {
       setOrbPersona(preview);
     }
-  }, []);
+    // ?luna=1 enseña orejas + guau sin pasar por el micro.
+    if (params.get("luna") === "1") {
+      playLuna();
+    }
+  }, [playLuna]);
 
   function celebrateDeviceSuccess(ok: boolean | null) {
     if (!ok) {
@@ -93,7 +107,7 @@ export function ConversationView() {
 
   // Cierra el tutor sin tocar el orbe ni el hint (tele/Play acaban de escribirlo).
   function closeJapaneseChat() {
-    speech.cancel();
+    cancelSpeech();
     setJapaneseEnabled(false);
     setMessages([]);
     setMode("conversar");
@@ -122,6 +136,11 @@ export function ConversationView() {
         return;
       }
 
+      // Luna se queda champagne hasta el siguiente comando (no un timeout).
+      if (result.command !== "call_luna") {
+        setLunaOn(false);
+      }
+
       if (result.command === "enable_japanese_mode") {
         openJapaneseChat();
         return;
@@ -138,6 +157,14 @@ export function ConversationView() {
         setConfused(false);
         setMode(result.practice_mode);
         setMessages((current) => [...current, modeNotice(result.practice_mode!)]);
+        return;
+      }
+
+      if (result.command === "call_luna") {
+        playLuna();
+        if (result.device_message) {
+          setHint(result.device_message);
+        }
         return;
       }
 
@@ -195,7 +222,7 @@ export function ConversationView() {
           },
         ]);
         if (turn.speak) {
-          speech.speakJapanese(turn.speak);
+          speakJapanese(turn.speak);
         }
         return;
       }
@@ -209,7 +236,7 @@ export function ConversationView() {
       return;
     }
 
-    speech.cancel();
+    cancelSpeech();
     setConfused(false);
     await recorder.start();
   }
@@ -233,6 +260,8 @@ export function ConversationView() {
             mode={mode}
             onModeChange={setMode}
             hideOrb={successPlayKey !== null}
+            luna={lunaOn}
+            lunaPlayKey={lunaPlayKey}
           />
 
           {!japaneseEnabled ? (
@@ -270,7 +299,7 @@ export function ConversationView() {
               dispatchError={dispatcher.errorMessage}
               notice={hint}
               onTalk={talk}
-              onReplay={speech.speakJapanese}
+              onReplay={speakJapanese}
             />
           </div>
         ) : null}

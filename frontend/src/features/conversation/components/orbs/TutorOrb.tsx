@@ -17,29 +17,61 @@ type TutorOrbProps = {
   persona?: OrbPersona;
   activity?: OrbActivity;
   hidden?: boolean;
+  luna?: boolean;
+  lunaPlayKey?: number;
 };
+
+function LunaTail() {
+  return <span className="tutor-orb-luna tutor-orb-luna-tail" />;
+}
+
+function LunaFace() {
+  return (
+    <>
+      <span className="tutor-orb-luna tutor-orb-luna-ear tutor-orb-luna-ear--left">
+        <span className="tutor-orb-luna-pom tutor-orb-luna-pom--a" />
+        <span className="tutor-orb-luna-pom tutor-orb-luna-pom--b" />
+        <span className="tutor-orb-luna-pom tutor-orb-luna-pom--c" />
+      </span>
+      <span className="tutor-orb-luna tutor-orb-luna-ear tutor-orb-luna-ear--right">
+        <span className="tutor-orb-luna-pom tutor-orb-luna-pom--a" />
+        <span className="tutor-orb-luna-pom tutor-orb-luna-pom--b" />
+        <span className="tutor-orb-luna-pom tutor-orb-luna-pom--c" />
+      </span>
+      <span className="tutor-orb-luna tutor-orb-luna-bandana" />
+      <span className="tutor-orb-luna tutor-orb-luna-nose" />
+    </>
+  );
+}
 
 export function TutorOrb({
   persona = "idle",
   activity = "idle",
   hidden = false,
+  luna = false,
+  lunaPlayKey = 0,
 }: TutorOrbProps) {
   const variant = ORB_VARIANTS[persona];
   const Scene = variant.Scene;
-  const copy = variant.caption(activity);
+  const copy = luna
+    ? { title: "LUNA", subtitle: "Guau guau.", icon: null }
+    : variant.caption(activity);
 
   return (
     <div className={`flex flex-col items-center gap-4 ${hidden ? "invisible" : ""}`}>
       <div
         className={`tutor-orb-stage tutor-orb-stage--${persona}`}
         data-activity={activity}
+        data-luna={luna ? "on" : "off"}
         aria-hidden
       >
+        <LunaTail key={`luna-tail-${lunaPlayKey}`} />
         {activity === "thinking" ? <span className="tutor-orb-think-mark">?</span> : null}
         {activity === "confused" ? (
           <span className="tutor-orb-think-mark tutor-orb-confused-mark">???</span>
         ) : null}
         <Scene activity={activity} />
+        <LunaFace key={`luna-face-${lunaPlayKey}`} />
       </div>
 
       <div className="flex flex-col items-center gap-1 text-center">

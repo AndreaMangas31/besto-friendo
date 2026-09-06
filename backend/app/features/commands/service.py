@@ -532,6 +532,21 @@ def _detect_heating_command(compact: str) -> Optional[CommandName]:
     return None
 
 
+# Whisper a veces oye lona/nuna. Frases largas = “la luna” del cielo, no la perra.
+_LUNA_NAME_TOKENS = frozenset({"luna", "lona", "nuna"})
+
+
+def _is_call_luna(compact: str) -> bool:
+    if not compact:
+        return False
+    tokens = compact.split()
+    if not any(token in _LUNA_NAME_TOKENS for token in tokens):
+        return False
+    if len(tokens) > 6:
+        return False
+    return True
+
+
 def detect_command(
     transcript: str,
     japanese_enabled: bool,
@@ -554,6 +569,9 @@ def detect_command(
     heating_command = _detect_heating_command(compact)
     if heating_command:
         return heating_command, None
+
+    if _is_call_luna(compact):
+        return "call_luna", None
 
     if japanese_enabled:
         practice = _detect_practice_mode(compact)
@@ -599,6 +617,14 @@ async def dispatch(
     if command == "japanese_turn":
         turn = await run_turn_from_text(transcript, history_json, mode)
         return DispatchResponse(command=command, transcript=transcript, turn=turn)
+
+    # Easter egg: sin dispositivo. El frontend pone orejas y el guau.
+    if command == "call_luna":
+        return DispatchResponse(
+            command=command,
+            transcript=transcript,
+            device_message="Luna te ha oído.",
+        )
 
     if command == "ps5_power_on":
         started = time.perf_counter()

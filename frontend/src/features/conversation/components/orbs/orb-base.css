@@ -398,13 +398,194 @@
   animation: orb-dots 1.2s linear infinite;
 }
 
+/* Caniche toy champagne: se mantiene hasta el siguiente comando. Piezas pequeñas. */
+@keyframes luna-ear-flop {
+  0% {
+    transform: translateY(-12%) rotate(var(--luna-ear-rot)) scale(0.7);
+    opacity: 0;
+  }
+  28% {
+    transform: translateY(8%) rotate(var(--luna-ear-rot)) scale(1.06);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) rotate(var(--luna-ear-rot)) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes luna-tail-wag {
+  0%,
+  100% {
+    transform: rotate(-28deg);
+  }
+  50% {
+    transform: rotate(22deg);
+  }
+}
+
+@keyframes luna-bandana-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.tutor-orb-luna {
+  display: none;
+}
+
+.tutor-orb-stage[data-luna="on"] .tutor-orb-luna {
+  display: block;
+}
+
+/* El blob entero, no solo orejas/cola: mismo champagne. Gana a tele/Play/tutor. */
+.tutor-orb-stage[data-luna="on"] .tutor-orb {
+  background:
+    radial-gradient(42% 38% at 32% 28%, rgba(255, 255, 255, 0.72) 0%, transparent 62%),
+    radial-gradient(80% 80% at 50% 58%, #f6ead8 0%, #efe0c8 55%, #e6d3b5 100%);
+  box-shadow:
+    0 0 0 1px rgba(230, 211, 181, 0.7),
+    0 18px 50px rgba(180, 150, 110, 0.32),
+    inset 0 -18px 28px rgba(180, 150, 110, 0.22);
+}
+
+.tutor-orb-stage[data-luna="on"] .tutor-orb-ring {
+  border-color: rgba(230, 211, 181, 0.65);
+}
+
+.tutor-orb-stage[data-luna="on"] .tutor-orb-eye {
+  background: #1c1917;
+  box-shadow: 0 0 8px rgba(28, 25, 23, 0.28);
+}
+
+.tutor-orb-stage[data-luna="on"] .tutor-orb-astro-visor {
+  display: none;
+}
+
+.tutor-orb-luna-tail {
+  position: absolute;
+  z-index: 0;
+  right: 6%;
+  bottom: 18%;
+  width: 18%;
+  height: 22%;
+  transform-origin: 15% 85%;
+  animation: luna-tail-wag 0.28s ease-in-out infinite;
+}
+
+.tutor-orb-luna-tail::before,
+.tutor-orb-luna-tail::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #f6ead8 0%, #efe0c8 55%, #e6d3b5 100%);
+  box-shadow: 0 2px 6px rgba(180, 150, 110, 0.25);
+}
+
+.tutor-orb-luna-tail::before {
+  width: 70%;
+  height: 55%;
+  left: 0;
+  bottom: 8%;
+}
+
+.tutor-orb-luna-tail::after {
+  width: 48%;
+  height: 42%;
+  right: 0;
+  top: 0;
+}
+
+.tutor-orb-luna-ear {
+  position: absolute;
+  z-index: 4;
+  top: 10%;
+  width: 22%;
+  height: 28%;
+  --luna-ear-rot: -18deg;
+  animation: luna-ear-flop 0.45s ease-out both;
+}
+
+.tutor-orb-luna-ear--left {
+  left: 14%;
+}
+
+.tutor-orb-luna-ear--right {
+  right: 14%;
+  --luna-ear-rot: 18deg;
+  animation-delay: 0.05s;
+}
+
+.tutor-orb-luna-pom {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 30%, #f6ead8 0%, #efe0c8 52%, #e6d3b5 100%);
+  box-shadow: 0 2px 8px rgba(180, 150, 110, 0.22);
+}
+
+.tutor-orb-luna-pom--a {
+  width: 72%;
+  height: 58%;
+  left: 8%;
+  top: 0;
+}
+
+.tutor-orb-luna-pom--b {
+  width: 58%;
+  height: 52%;
+  right: 0;
+  top: 22%;
+}
+
+.tutor-orb-luna-pom--c {
+  width: 48%;
+  height: 42%;
+  left: 18%;
+  bottom: 0;
+}
+
+.tutor-orb-luna-bandana {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  bottom: 10%;
+  width: 0;
+  height: 0;
+  border-left: 0.7rem solid transparent;
+  border-right: 0.7rem solid transparent;
+  border-top: 1.05rem solid #dc2626;
+  filter: drop-shadow(0 2px 3px rgba(127, 29, 29, 0.35));
+  animation: luna-bandana-in 0.35s ease-out both;
+}
+
+.tutor-orb-luna-nose {
+  position: absolute;
+  z-index: 5;
+  left: 50%;
+  top: 62%;
+  width: 9%;
+  height: 7%;
+  transform: translateX(-50%);
+  border-radius: 50% 50% 45% 45%;
+  background: #171717;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.25) inset;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .tutor-orb,
   .tutor-orb-ring,
   .tutor-orb-dots,
   .tutor-orb-eye,
   .tutor-orb-think-mark,
-  .tutor-orb-confused-mark {
+  .tutor-orb-confused-mark,
+  .tutor-orb-luna-tail,
+  .tutor-orb-luna-ear,
+  .tutor-orb-luna-bandana {
     animation: none;
   }
 }

@@ -28,11 +28,12 @@ CommandName = Literal[
     "heating_temp_up",
     "heating_temp_down",
     "heating_set_temp",
+    "call_luna",
     "unknown",
 ]
 PracticeMode = Literal["conversar", "corregir", "ideas"]
 CommandHelpGroup = Literal["tutor", "tv", "ps5", "heating"]
-# japanese_turn / unknown no van en la ayuda: no son frases que el usuario “dispare”.
+# japanese_turn / unknown / call_luna no van en la ayuda: easter egg o no son frases del menú.
 CommandHelpId = Literal[
     "enable_japanese_mode",
     "disable_japanese_mode",

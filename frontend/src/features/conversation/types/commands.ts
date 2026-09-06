@@ -28,6 +28,7 @@ export type CommandName =
   | "heating_temp_up"
   | "heating_temp_down"
   | "heating_set_temp"
+  | "call_luna"
   | "unknown";
 
 export type DispatchResponse = {
@@ -43,7 +44,7 @@ export type DispatchStatus = "idle" | "sending" | "ok" | "error";
 
 export type CommandHelpGroup = "tutor" | "tv" | "ps5" | "heating";
 
-export type CommandHelpId = Exclude<CommandName, "japanese_turn" | "unknown">;
+export type CommandHelpId = Exclude<CommandName, "japanese_turn" | "unknown" | "call_luna">;
 
 export type CommandHelpItem = {
   id: CommandHelpId;

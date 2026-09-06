@@ -8,7 +8,7 @@ DEST="${HOME}/Library/LaunchAgents/com.bestofriendo.home-api.plist"
 LOGDIR="${HOME}/Library/Logs/besto-friendo"
 
 mkdir -p "${HOME}/Library/LaunchAgents" "$LOGDIR"
-chmod +x "${ROOT}/scripts/mac-home-api.sh" "${ROOT}/scripts/install-mac-launchagent.sh"
+chmod +x "${ROOT}/scripts/start-grok" "${ROOT}/scripts/mac-home-api.sh" "${ROOT}/scripts/install-mac-launchagent.sh"
 
 sed -e "s|__ROOT__|${ROOT}|g" -e "s|__HOME__|${HOME}|g" "$SRC" >"$DEST"
 

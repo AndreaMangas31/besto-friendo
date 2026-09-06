@@ -12,7 +12,7 @@
 	<string>__ROOT__</string>
 	<key>ProgramArguments</key>
 	<array>
-		<string>__ROOT__/scripts/mac-home-api.sh</string>
+		<string>__ROOT__/scripts/start-grok</string>
 	</array>
 	<key>StandardOutPath</key>
 	<string>__HOME__/Library/Logs/besto-friendo/tunnel.log</string>

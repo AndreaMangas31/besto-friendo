@@ -34,21 +34,22 @@ export function TutorStage({
 
   return (
     <section className="flex flex-col items-center justify-center gap-6 px-6 py-10">
+       <CommandHelp
+            items={catalog.items}
+            isLoading={catalog.isLoading}
+            errorMessage={catalog.errorMessage}
+          />
       <div className="space-y-2 text-center">
         <div className="flex items-center justify-center gap-2">
           <h1 className="text-3xl font-semibold tracking-tight text-zinc-900 md:text-4xl">
             Besto Friendo
           </h1>
-          <CommandHelp
-            items={catalog.items}
-            isLoading={catalog.isLoading}
-            errorMessage={catalog.errorMessage}
-          />
+         
         </div>
         <p className="max-w-sm text-zinc-600">
           {japaneseEnabled
             ? "Tutor de japonés. Habla o cambia de modo con la voz o los botones."
-            : "Pulsa la i para ver los comandos. Habla para activar el tutor o la tele."}
+            : "Pulsa la i para ver qué puedes hacer."}
         </p>
       </div>
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { Menu as MenuIcon } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import type { CommandHelpGroup, CommandHelpItem } from "@/features/conversation/types/commands";
 
@@ -9,19 +10,22 @@ type CommandHelpProps = {
   errorMessage: string | null;
 };
 
-const GROUP_LABEL: Record<CommandHelpGroup, string> = {
-  tutor: "Tutor",
-  tv: "Tele",
-  ps5: "PS5",
-  heating: "Calefacción",
-};
-
-const GROUP_ORDER: CommandHelpGroup[] = ["tutor", "tv", "ps5", "heating"];
+const CAPABILITIES: {
+  group: CommandHelpGroup;
+  emoji: string;
+  label: string;
+}[] = [
+  { group: "tutor", emoji: "🇯🇵", label: "Practicar japonés" },
+  { group: "tv", emoji: "📺", label: "Controlar la tele" },
+  { group: "ps5", emoji: "🎮", label: "Controlar la Play" },
+  { group: "heating", emoji: "🏠", label: "Casa" },
+];
 
 export function CommandHelp({ items, isLoading, errorMessage }: CommandHelpProps) {
   const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState<CommandHelpGroup | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
-  const menuId = useId();
+  const panelId = useId();
 
   useEffect(() => {
     if (!open) {
@@ -49,10 +53,12 @@ export function CommandHelp({ items, isLoading, errorMessage }: CommandHelpProps
     };
   }, [open]);
 
-  const grouped = GROUP_ORDER.map((group) => ({
-    group,
-    items: items.filter((item) => item.group === group),
-  }));
+  // Al cerrar el panel, la próxima apertura arranca con todo plegado.
+  useEffect(() => {
+    if (!open) {
+      setExpanded(null);
+    }
+  }, [open]);
 
   return (
     <div ref={rootRef} className="relative inline-flex">
@@ -60,17 +66,16 @@ export function CommandHelp({ items, isLoading, errorMessage }: CommandHelpProps
         type="button"
         className="flex h-7 w-7 items-center justify-center rounded-full border border-zinc-300 text-sm font-medium text-zinc-600 hover:bg-zinc-100"
         aria-expanded={open}
-        aria-controls={menuId}
-        aria-label="Comandos de voz"
+        aria-controls={panelId}
+        aria-label="Qué puedo hacer"
         onClick={() => setOpen((current) => !current)}
       >
-        i
+        <MenuIcon className="h-4 w-4" aria-hidden />
       </button>
 
       {open ? (
         <div
-          id={menuId}
-          role="menu"
+          id={panelId}
           className="absolute left-1/2 top-[calc(100%+0.5rem)] z-20 w-[min(20rem,calc(100vw-3rem))] -translate-x-1/2 overflow-hidden rounded-xl border border-zinc-200 bg-white text-left shadow-lg"
         >
           <div className="max-h-80 overflow-y-auto p-3">
@@ -83,14 +88,42 @@ export function CommandHelp({ items, isLoading, errorMessage }: CommandHelpProps
               </p>
             ) : null}
             {!isLoading && !errorMessage ? (
-              <div className="space-y-4">
-                {grouped.map(({ group, items: groupItems }) => (
-                  <HelpGroup
-                    key={group}
-                    label={GROUP_LABEL[group]}
-                    items={groupItems}
-                  />
-                ))}
+              <div>
+                <h2 className="mb-2 text-sm font-semibold text-zinc-900">
+                  ¿Qué puedo hacer?
+                </h2>
+                <ul className="divide-y divide-zinc-100">
+                  {CAPABILITIES.map((capability) => {
+                    const groupItems = items.filter(
+                      (item) => item.group === capability.group,
+                    );
+                    const isExpanded = expanded === capability.group;
+                    const regionId = `${panelId}-${capability.group}`;
+                    return (
+                      <li key={capability.group}>
+                        <button
+                          type="button"
+                          className="flex w-full items-center gap-2 py-2 text-left text-sm text-zinc-800 hover:text-zinc-950"
+                          aria-expanded={isExpanded}
+                          aria-controls={regionId}
+                          onClick={() =>
+                            setExpanded((current) =>
+                              current === capability.group ? null : capability.group,
+                            )
+                          }
+                        >
+                          <span aria-hidden="true">{capability.emoji}</span>
+                          <span>{capability.label}</span>
+                        </button>
+                        {isExpanded ? (
+                          <div id={regionId} className="pb-3 pl-7">
+                            <HelpPhrases items={groupItems} />
+                          </div>
+                        ) : null}
+                      </li>
+                    );
+                  })}
+                </ul>
               </div>
             ) : null}
           </div>
@@ -100,31 +133,20 @@ export function CommandHelp({ items, isLoading, errorMessage }: CommandHelpProps
   );
 }
 
-function HelpGroup({
-  label,
-  items,
-}: {
-  label: string;
-  items: CommandHelpItem[];
-}) {
+function HelpPhrases({ items }: { items: CommandHelpItem[] }) {
   if (items.length === 0) {
-    return null;
+    return <p className="text-xs text-zinc-500">Aún no hay frases para esto.</p>;
   }
 
   return (
-    <section>
-      <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-400">
-        {label}
-      </h2>
-      <ul className="space-y-2">
-        {items.map((item) => (
-          <li key={item.id}>
-            <p className="text-sm font-medium text-zinc-800">{item.title}</p>
-            <p className="text-xs italic text-zinc-500">“{item.example}”</p>
-            <p className="text-xs text-zinc-600">{item.description}</p>
-          </li>
-        ))}
-      </ul>
-    </section>
+    <ul className="space-y-2">
+      {items.map((item) => (
+        <li key={item.id}>
+          <p className="text-sm font-medium text-zinc-800">{item.title}</p>
+          <p className="text-xs italic text-zinc-500">“{item.example}”</p>
+          <p className="text-xs text-zinc-600">{item.description}</p>
+        </li>
+      ))}
+    </ul>
   );
 }

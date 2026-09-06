@@ -55,21 +55,27 @@ El navegador **nunca** llama a `:8000` a pelo. Pide `/bf-api/...` al mismo Next 
 
 En local, reinicia `pnpm dev` si cambias `.env.local`.
 
-### Móvil: portero + ngrok (Mac despierto)
+### Móvil: `start-grok`
 
-El móvil solo abre [https://besto-friendo.vercel.app](https://besto-friendo.vercel.app). Si el Mac está dormido, no hay túnel.
+Un comando: portero (`:7999`) + túnel ngrok. El tutor `:8000` lo enciende el portero al primer uso. Mac despierto.
 
-El LaunchAgent deja vivo el **portero** (`uvicorn app.boot:app` en `:7999`) y ngrok a esa URL fija. La primera petición arranca el tutor en `:8000`.
+```bash
+cd /Users/andream31/real-projects/besto-friendo
+./scripts/start-grok
+```
+
+Deja esa terminal abierta. En el teléfono: [https://besto-friendo.vercel.app](https://besto-friendo.vercel.app).
+
+Vercel Secrets: `BACKEND_URL=https://pug-stump-approve.ngrok-free.dev` y `BACKEND_WAKE_KEY` = `BOOT_SECRET`. Redeploy si cambias el front.
+
+Al iniciar sesión (opcional):
 
 ```bash
 ./scripts/install-mac-launchagent.sh
 launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.bestofriendo.home-api.plist
 ```
 
-1. Ngrok: https://dashboard.ngrok.com/signup — token y dominio fijo (`pug-stump-approve.ngrok-free.dev` o el tuyo).
-2. `backend/.env`: `BOOT_SECRET` (una cadena larga).
-3. Vercel Secrets: `BACKEND_URL=https://….ngrok-free.dev` y `BACKEND_WAKE_KEY` = el mismo secreto. Borra `NEXT_PUBLIC_API_URL` si sigue ahí.
-4. Despliega el front con el Route Handler `/bf-api`.
+Esquema y cada paso en palabras simples: [docs/movil-y-portero.md](docs/movil-y-portero.md).
 
 ## Fase 2
 

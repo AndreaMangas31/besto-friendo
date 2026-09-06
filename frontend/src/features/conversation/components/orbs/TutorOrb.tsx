@@ -4,6 +4,7 @@ import type {
   OrbActivity,
   OrbPersona,
 } from "@/features/conversation/types/orb";
+import { chatOrb } from "@/features/conversation/components/orbs/chat/ChatOrb";
 import { heatingOrb } from "@/features/conversation/components/orbs/heating/HeatingOrb";
 import { idleOrb } from "@/features/conversation/components/orbs/idle/IdleOrb";
 import { japaneseOrb } from "@/features/conversation/components/orbs/japanese/JapaneseOrb";
@@ -14,6 +15,7 @@ import type { OrbVariant } from "@/features/conversation/components/orbs/variant
 const ORB_VARIANTS: Record<OrbPersona, OrbVariant> = {
   idle: idleOrb,
   japanese: japaneseOrb,
+  chat: chatOrb,
   tv: tvOrb,
   play: playOrb,
   heating: heatingOrb,
@@ -81,7 +83,7 @@ export function TutorOrb({
   const stageBody = (
     <>
       <LunaTail key={`luna-tail-${lunaPlayKey}`} />
-      {activity === "thinking" && !poked ? (
+      {activity === "thinking" ? (
         <span className="tutor-orb-think-mark">?</span>
       ) : null}
       {activity === "confused" && !poked ? (
@@ -89,12 +91,12 @@ export function TutorOrb({
           ???
         </span>
       ) : null}
-      {activity === "oops" || poked ? (
+      {activity !== "thinking" && (activity === "oops" || poked) ? (
         <span className="tutor-orb-think-mark tutor-orb-confused-mark tutor-orb-poke-mark">
           {pokeMark ?? "OOPS"}
         </span>
       ) : null}
-      {activity === "listening" ? (
+      {activity === "listening" || activity === "speaking" ? (
         <>
           <span className="tutor-orb-listen-ripple tutor-orb-listen-ripple--a" />
           <span className="tutor-orb-listen-ripple tutor-orb-listen-ripple--b" />

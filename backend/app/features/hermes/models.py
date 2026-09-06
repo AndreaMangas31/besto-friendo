@@ -33,3 +33,13 @@ class RouterIntent(BaseModel):
     hdmi: Optional[int] = None
     celsius: Optional[int] = None
     reply: Optional[str] = None
+
+
+class ChatTurn(BaseModel):
+    """Modo conversación: prosa + audio TTS del servidor. No es el tutor japonés."""
+
+    user_text: str
+    assistant_text: str
+    speak: str
+    audio_mime: Optional[str] = None
+    audio_base64: Optional[str] = None

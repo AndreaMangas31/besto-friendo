@@ -1,17 +1,24 @@
 import json
 import logging
 import re
+import time
 from typing import Optional
 
-from app.features.hermes.gateway import complete
-from app.features.hermes.models import CatalogSkill, PracticeModeName, RouterIntent
+from app.features.hermes.gateway import complete, complete_groq
+from app.features.hermes.models import CatalogSkill, ChatTurn, PracticeModeName, RouterIntent
 from app.features.hermes.registry import is_active_agent
 from app.features.hermes.skills import build_router_messages
+from app.features.hermes.tts import synthesize_speech
 from app.shared.ai.factory import get_ai_provider
 
 logger = logging.getLogger(__name__)
 
 _PRACTICE: set[str] = {"conversar", "corregir", "ideas"}
+_CHAT_HISTORY_TURNS = 10
+_CHAT_SYSTEM = """Eres Besto: mascota pequeña de esta casa. ESPAÑOL DE ESPAÑA (es-ES, tuteo, vale): no latino ni de call center.
+Majo, simpático, servicial y empático. Te ríes con la gente (jaja/jajaja si hay broma). Humor negro solo si se nota que es chiste. Si piden una frase larga, la das; no te niegues.
+Sin markdown, listas, JSON ni ensayos. Si preguntan algo de ahora o un hecho que no sepas, busca y resume con la fuente. Si falla, dilo.
+No controles tele, Play ni calefacción: eso es otro modo."""
 
 
 def _extract_json_object(raw: str) -> Optional[dict]:
@@ -101,9 +108,9 @@ async def route_unknown(
 ) -> RouterIntent:
     skill_ids = {item.id for item in skills}
     messages = build_router_messages(transcript, skills)
-    raw = await complete(messages)
+    raw = await complete_groq(messages)
     logger.info(
-        "Router raw_chars=%s transcript=%s",
+        "Router groq raw_chars=%s transcript=%s",
         len(raw),
         transcript[:120],
     )
@@ -147,3 +154,74 @@ async def rewrite_heard(
         len(line),
     )
     return line[:160]
+
+
+def _parse_chat_history(raw: Optional[str]) -> list[dict]:
+    if not raw:
+        return []
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise ValueError("history no es JSON válido") from exc
+    if not isinstance(payload, list):
+        raise ValueError("history debe ser una lista")
+    turns: list[dict] = []
+    for item in payload[-_CHAT_HISTORY_TURNS:]:
+        if not isinstance(item, dict):
+            continue
+        role = item.get("role")
+        text = item.get("text")
+        if role not in ("user", "assistant") or not isinstance(text, str) or not text.strip():
+            continue
+        turns.append({"role": role, "content": text.strip()})
+    return turns
+
+
+_SPEAK_MAX_CHARS = 500
+
+
+def _speakable(text: str) -> str:
+    # El mp3 lee unas frases; el chat puede llevar más. 4 frases para no cortar un jajaja.
+    line = re.sub(r"[#*_`]+", "", text)
+    line = re.sub(r"\s+", " ", line).strip()
+    parts = re.split(r"(?<=[.!?…])\s+", line)
+    clipped = " ".join(parts[:4]).strip() or line
+    if len(clipped) > _SPEAK_MAX_CHARS:
+        clipped = clipped[:_SPEAK_MAX_CHARS].rsplit(" ", 1)[0].strip()
+    return clipped
+
+
+async def chat_turn(transcript: str, history_json: Optional[str]) -> ChatTurn:
+    """Un turno de modo conversación. Hermes con tools si hay URL; Groq si no."""
+    history = _parse_chat_history(history_json)
+    messages = [
+        {"role": "system", "content": _CHAT_SYSTEM},
+        *history,
+        {"role": "user", "content": transcript or "Dime."},
+    ]
+    started = time.perf_counter()
+    raw = await complete(messages, temperature=0.4, timeout_sec=80.0)
+    reply = (raw or "").strip() or "Dime."
+    speak = _speakable(reply)
+    audio_mime = None
+    audio_base64 = None
+    try:
+        tts = await synthesize_speech(speak)
+        if tts:
+            audio_mime, audio_base64 = tts
+    except Exception as exc:
+        logger.info("TTS chat_turn falló err=%s", exc)
+    logger.info(
+        "chat_turn user_chars=%s reply_chars=%s audio_bytes=%s ms=%.0f",
+        len(transcript or ""),
+        len(reply),
+        len(audio_base64) if audio_base64 else 0,
+        (time.perf_counter() - started) * 1000,
+    )
+    return ChatTurn(
+        user_text=transcript,
+        assistant_text=reply,
+        speak=speak,
+        audio_mime=audio_mime,
+        audio_base64=audio_base64,
+    )

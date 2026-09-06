@@ -1,10 +1,11 @@
+import asyncio
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.core.config import settings
+from app.core.config import settings, watch_dotenv
 from app.core.cors import setup_cors
-# FRONTEND_ORIGIN (Vercel + local) se lee al importar settings; un cambio en .env pide reload.
 from app.features.commands.controller import router as commands_router
 from app.features.conversation.controller import router as conversation_router
 from app.features.health.controller import router as health_router
@@ -21,7 +22,17 @@ if not _app_log.handlers:
     _app_log.setLevel(logging.INFO)
     _app_log.propagate = False
 
-app = FastAPI(title=settings.app_name)
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    stop = asyncio.Event()
+    task = asyncio.create_task(watch_dotenv(stop))
+    yield
+    stop.set()
+    await task
+
+
+app = FastAPI(title=settings.app_name, lifespan=lifespan)
 setup_cors(app)
 app.include_router(health_router)
 # Voz entra por POST /commands/dispatch; conversation/turn queda para pruebas.

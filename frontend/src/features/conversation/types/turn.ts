@@ -17,6 +17,8 @@ export type ChatMessage = {
   text: string;
   speak?: string;
   blocks?: ContentBlock[];
+  // Blob URL del mp3 del servidor (modo conversación). No se reenvía en history.
+  audioSrc?: string;
 };
 
 export type ConversationTurnResponse = {
@@ -24,4 +26,6 @@ export type ConversationTurnResponse = {
   assistant_text: string;
   speak: string;
   blocks: ContentBlock[];
+  audio_mime?: string;
+  audio_base64?: string;
 };

@@ -4,13 +4,14 @@ import re
 import time
 from typing import Optional, Tuple
 
-from fastapi import UploadFile
+from fastapi import HTTPException, UploadFile
 
 from app.features.commands.catalog import get_catalog
 from app.features.commands.models import CommandName, DispatchResponse, PracticeMode
+from app.features.conversation.models import ConversationTurnResponse
 from app.features.conversation.service import run_turn_from_text, transcribe_upload
 from app.features.hermes.models import CatalogSkill, RouterIntent
-from app.features.hermes.service import rewrite_heard, route_unknown
+from app.features.hermes.service import chat_turn, rewrite_heard, route_unknown
 from app.shared.ai.factory import AiNotConfiguredError
 from app.features.heating.service import power_off as heating_power_off
 from app.features.heating.service import power_on as heating_power_on
@@ -79,7 +80,7 @@ async def _with_understood(
     heard_started: Optional[float] = None,
 ) -> DispatchResponse:
     # Tutor japonés y unknown confuso: el STT se enseña como está.
-    if resp.command in {"japanese_turn", "unknown"}:
+    if resp.command in {"japanese_turn", "conversation_turn", "unknown"}:
         if heard_task is not None and not heard_task.done():
             heard_task.cancel()
         return resp
@@ -627,9 +628,37 @@ def _is_call_luna(compact: str) -> bool:
     return True
 
 
+def _is_enable_conversation(compact: str) -> bool:
+    # No confundir con el chip japonés “modo conversar”.
+    has_enable = "enable" in compact or "activa" in compact or "enciende" in compact
+    has_conv = "conversation" in compact or "conversacion" in compact or "conversación" in compact
+    has_mode = "mode" in compact or "modo" in compact
+    if has_enable and has_conv and has_mode:
+        return True
+    return _has_name(compact) and has_enable and has_conv
+
+
+def _is_disable_conversation(compact: str) -> bool:
+    has_conv = "conversation" in compact or "conversacion" in compact or "conversación" in compact
+    has_mode = "mode" in compact or "modo" in compact
+    has_disable = any(
+        token in compact
+        for token in ("disable", "cancel", "desactiva", "cancela", "apaga", "cierra")
+    )
+    # “sal del modo conversación”
+    if "sal" in compact.split() and has_conv:
+        return True
+    if not has_disable or not has_conv:
+        return False
+    if _has_name(compact) and (has_conv or has_mode):
+        return True
+    return has_conv and has_mode
+
+
 def detect_command(
     transcript: str,
     japanese_enabled: bool,
+    conversation_enabled: bool = False,
 ) -> Tuple[CommandName, Optional[PracticeMode]]:
     compact = _compact(transcript)
 
@@ -637,6 +666,14 @@ def detect_command(
         return "enable_japanese_mode", None
     if _is_disable_japanese(compact):
         return "disable_japanese_mode", None
+    if _is_enable_conversation(compact):
+        return "enable_conversation_mode", None
+    if _is_disable_conversation(compact):
+        return "disable_conversation_mode", None
+
+    # Modo charla: no tele/Play/Luna hasta que salgas.
+    if conversation_enabled:
+        return "conversation_turn", None
 
     ps5_command = _detect_ps5_command(compact)
     if ps5_command:
@@ -680,17 +717,21 @@ async def dispatch(
     japanese_enabled: bool,
     history_json: Optional[str],
     mode: Optional[str],
+    conversation_enabled: bool = False,
 ) -> DispatchResponse:
     stt_started = time.perf_counter()
-    # Casa: si Whisper pinta islandés (ð/þ), un segundo pase en es. Tutor japonés no.
+    # Casa y modo conversación: si Whisper pinta islandés, segundo pase en es. Tutor japonés no.
     transcript = await transcribe_upload(audio, retry_es=not japanese_enabled)
     stt_ms = (time.perf_counter() - stt_started) * 1000
-    command, practice_mode = detect_command(transcript, japanese_enabled)
+    command, practice_mode = detect_command(
+        transcript, japanese_enabled, conversation_enabled
+    )
     logger.info(
-        "Dispatch command=%s practice_mode=%s japanese_enabled=%s stt_ms=%.0f transcript=%s",
+        "Dispatch command=%s practice_mode=%s japanese_enabled=%s conversation_enabled=%s stt_ms=%.0f transcript=%s",
         command,
         practice_mode,
         japanese_enabled,
+        conversation_enabled,
         stt_ms,
         transcript[:120],
     )
@@ -714,6 +755,36 @@ async def dispatch(
     if command == "japanese_turn":
         turn = await run_turn_from_text(transcript, history_json, mode)
         return DispatchResponse(command=command, transcript=transcript, turn=turn)
+
+    if command == "conversation_turn":
+        try:
+            chat = await chat_turn(transcript, history_json)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except AiNotConfiguredError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except Exception as exc:
+            logger.exception("chat_turn falló")
+            raise HTTPException(
+                status_code=502,
+                detail=f"El agente de conversación no respondió: {exc}",
+            ) from exc
+        return DispatchResponse(
+            command=command,
+            transcript=transcript,
+            turn=ConversationTurnResponse(
+                user_text=chat.user_text,
+                assistant_text=chat.assistant_text,
+                speak=chat.speak,
+                audio_mime=chat.audio_mime or "",
+                audio_base64=chat.audio_base64 or "",
+            ),
+            agent_id="chat",
+        )
+
+    if command == "enable_conversation_mode":
+        # El hola es mp3 local (misma voz que “a ver”). No esperamos TTS aquí.
+        return DispatchResponse(command=command, transcript=transcript, agent_id="chat")
 
     # Groq del hint a la vez que tele/PS5: no sumar 3s después del Cast.
     heard_started = time.monotonic()
@@ -749,19 +820,25 @@ async def dispatch(
     if command == "ps5_power_on":
         started = time.perf_counter()
         result = await asyncio.to_thread(ps5_power_on)
-        # Sin señal la tele vuelve al launcher; HDMI cuando la Play ya está on.
-        hdmi = await tv_select_hdmi(1)
+        extra = ""
+        hdmi_ok: Optional[bool] = None
+        hdmi_msg = ""
+        if result.ok:
+            # Sin señal la tele vuelve al launcher; HDMI solo si la Play ya despertó.
+            hdmi = await tv_select_hdmi(1)
+            hdmi_ok = hdmi.ok
+            hdmi_msg = hdmi.message or ""
+            extra = f" {hdmi_msg}" if hdmi_msg else ""
         logger.info(
             "PS5 command=%s ok=%s stt_ms=%.0f ps5_ms=%.0f hdmi_ok=%s message=%s hdmi=%s",
             command,
             result.ok,
             stt_ms,
             (time.perf_counter() - started) * 1000,
-            hdmi.ok,
+            hdmi_ok,
             result.message,
-            hdmi.message,
+            hdmi_msg,
         )
-        extra = f" {hdmi.message}" if hdmi.message else ""
         return await finish(
             DispatchResponse(
                 command=command,

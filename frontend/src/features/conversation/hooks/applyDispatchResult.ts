@@ -18,6 +18,7 @@ import type {
 
 export type ApplyDispatchHandlers = {
   openJapaneseChat: () => void;
+  openConversationChat: () => void;
   applyPersona: (persona: OrbPersona) => void;
   playLuna: () => void;
   setHint: (hint: string | null) => void;
@@ -28,6 +29,7 @@ export type ApplyDispatchHandlers = {
   setLunaOn: (on: boolean) => void;
   celebrateDeviceSuccess: (ok: boolean | null) => void;
   speakJapanese: (text: string) => void;
+  playModelAudio: (base64: string, mime?: string) => void;
 };
 
 /** “Te oí” solo con understood. El STT crudo (tamil, islandés…) no se enseña. */
@@ -55,7 +57,19 @@ export function applyDispatchResult(
     return;
   }
 
+  if (result.command === "enable_conversation_mode") {
+    handlers.openConversationChat();
+    return;
+  }
+
   if (result.command === "disable_japanese_mode") {
+    handlers.setConfused(false);
+    handlers.applyPersona("idle");
+    handlers.setHint(null);
+    return;
+  }
+
+  if (result.command === "disable_conversation_mode") {
     handlers.setConfused(false);
     handlers.applyPersona("idle");
     handlers.setHint(null);
@@ -159,6 +173,29 @@ export function applyDispatchResult(
     ]);
     if (turn.speak) {
       handlers.speakJapanese(turn.speak);
+    }
+    return;
+  }
+
+  if (result.command === "conversation_turn" && result.turn) {
+    handlers.setConfused(false);
+    const turn = result.turn;
+    const audioSrc =
+      turn.audio_base64 && turn.audio_base64.length > 0
+        ? `data:${turn.audio_mime || "audio/mpeg"};base64,${turn.audio_base64}`
+        : undefined;
+    handlers.setMessages((current) => [
+      ...current,
+      { role: "user", text: turn.user_text },
+      {
+        role: "assistant",
+        text: turn.assistant_text,
+        speak: turn.speak || turn.assistant_text,
+        audioSrc,
+      },
+    ]);
+    if (turn.audio_base64) {
+      handlers.playModelAudio(turn.audio_base64, turn.audio_mime || "audio/mpeg");
     }
     return;
   }

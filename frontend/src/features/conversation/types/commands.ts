@@ -6,6 +6,9 @@ export type CommandName =
   | "disable_japanese_mode"
   | "set_practice_mode"
   | "japanese_turn"
+  | "enable_conversation_mode"
+  | "disable_conversation_mode"
+  | "conversation_turn"
   // TV
   | "tv_power_on"
   | "tv_power_off"
@@ -46,11 +49,11 @@ export type DispatchResponse = {
 
 export type DispatchStatus = "idle" | "sending" | "ok" | "error";
 
-export type CommandHelpGroup = "tutor" | "tv" | "ps5" | "heating";
+export type CommandHelpGroup = "tutor" | "chat" | "tv" | "ps5" | "heating";
 
 export type CommandHelpId = Exclude<
   CommandName,
-  "japanese_turn" | "unknown" | "call_luna" | "agent_turn"
+  "japanese_turn" | "conversation_turn" | "unknown" | "call_luna" | "agent_turn"
 >;
 
 export type CommandHelpItem = {

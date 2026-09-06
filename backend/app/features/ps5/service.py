@@ -244,7 +244,18 @@ def power_on() -> Ps5ActionResult:
         logger.exception("PS5 wakeup falló host=%s user=%s", host, user)
         return Ps5ActionResult(ok=False, message=f"No pude despertar {host}: {exc}")
 
-    woke = device.wait_for_wakeup(timeout=40)
+    try:
+        woke = device.wait_for_wakeup(timeout=40)
+    except OSError:
+        # Errno 65 / sin ruta: apagada del todo, no en reposo con red.
+        logger.info("PS5 wait_for_wakeup sin ruta host=%s", host)
+        return Ps5ActionResult(
+            ok=False,
+            message=(
+                "No llego a la Play. Tiene que estar en reposo (no apagada) "
+                "para despertarla. Prueba a decir HDMI 1."
+            ),
+        )
     logger.info("PS5 wait_for_wakeup host=%s woke=%s is_on=%s", host, woke, device.is_on)
     if woke or device.is_on:
         return Ps5ActionResult(ok=True, message=f"Mandé wakeup a {host} ({user}).")

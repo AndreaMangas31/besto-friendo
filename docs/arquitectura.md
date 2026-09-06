@@ -55,12 +55,12 @@ Una feature **no** importa otra, **salvo** `commands`: es el orquestador. `herme
 | `backend/app/features/commands` | Regex + catálogo + `dispatch`. |
 | `backend/app/features/tv` `ps5` `heating` | Dispositivos. **No** van por un agente. |
 | `backend/app/features/japanese` | Tutor (prompts). Sigue en Groq. |
-| `backend/app/features/hermes` | Router de texto si el regex no pilla. |
+| `backend/app/features/hermes` | Router Groq si el regex no pilla. Modo conversación → sidecar con web search. |
 | `backend/app/shared/ai` | Cliente Groq. |
 
 ## Un “oye, apaga la tele”
 
-El front corta el fetch a los **20 s**. La tele no espera a Hermes. El hint Groq corre **a la vez** que Cast, no después.
+El front corta el fetch a los **20 s** (casa) o **~55 s** (modo conversación, por si busca en la web). La tele no espera a Hermes. El hint Groq corre **a la vez** que Cast, no después.
 
 ```mermaid
 sequenceDiagram
@@ -112,14 +112,13 @@ Whisper (`whisper-large-v3`) **sin** `language` para no romper inglés. En casa 
 
 `detect_command` mira el catálogo (tele, Play, calefacción, modos del tutor, Luna). Frases mezcladas tipo “ey qué tal, súbeme el volumen” las gana el **comando**. Hermes **no** enciende la tele.
 
-### 3. Solo si `unknown`: router Hermes
+### 3. Solo si `unknown`: router Groq
 
-El catálogo entra como **skills** en el prompt. El router **no ejecuta** nada: devuelve JSON (`command` id, o `agent_id` + `reply`).
+El catálogo entra como **skills** en el prompt. El router **no ejecuta** nada: devuelve JSON (`command` id, o `agent_id` + `reply`). Va **siempre a Groq** (el sidecar con web search rompería el JSON).
 
-- Sidecar si `HERMES_API_URL` apunta a `:8642`.
-- Si no hay URL, el mismo prompt va a Groq.
+Agentes en `backend/app/features/hermes/registry.py`: **chat** activo. `web`, `japanese`, `discord` están `planned`.
 
-Agentes en `backend/app/features/hermes/registry.py`: **chat** activo. `web`, `japanese`, `discord` están `planned` (no salen para que no los invente).
+Modo conversación (`enable conversation mode`): cada turno es `conversation_turn` → `hermes.chat_turn` (sidecar si `HERMES_API_URL`, tools web; si no, Groq sin internet). Tele/Play/Luna no corren hasta `disable conversation mode`.
 
 ### 4. Ejecutar
 
@@ -127,7 +126,8 @@ Agentes en `backend/app/features/hermes/registry.py`: **chat** activo. `web`, `j
 | --- | --- |
 | `tv_*` `ps5_*` `heating_*` | Feature del dispositivo (Cast, mando, MIGo…). |
 | `japanese_turn` | Groq + `japanese`. Sin rewrite del hint. |
-| `agent_turn` | Texto de chat. Sin tocar la tele. |
+| `conversation_turn` | Hermes chat (o Groq). Historial + TTS es-ES. |
+| `agent_turn` | Texto one-shot en el hint. Sin tocar la tele. |
 | `unknown` | Orbe confuso. Se enseña el STT crudo. |
 
 ### 5. Hint «Te oí»

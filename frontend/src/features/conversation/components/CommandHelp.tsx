@@ -31,6 +31,14 @@ const CAPABILITIES: {
     well: "bg-pink-100",
   },
   {
+    group: "chat",
+    emoji: "👓",
+    label: "Conversar",
+    hint: "Charla y preguntas (Hermes)",
+    textColor: "text-indigo-600",
+    well: "bg-indigo-100",
+  },
+  {
     group: "tv",
     emoji: "📺",
     label: "Controlar la tele",

@@ -24,7 +24,7 @@ Una feature no importa otra, **salvo** `commands`: orquesta voz y llama a `tv`, 
 | `conversation` | STT helper y `POST /conversation/turn` (pruebas / tutor). |
 | `japanese` | Cerebro del tutor (prompts y parseo). Groq, no Hermes. |
 | `tv` / `ps5` / `heating` | Dispositivos. Regex + estos servicios, **nunca** tools de un agente. |
-| `hermes` | Router de texto cuando el regex no pilla comando. Sidecar `:8642` si hay `HERMES_API_URL`; si no, Groq. |
+| `hermes` | Router `unknown` (Groq, sin tools) y modo conversación (`chat_turn` → sidecar `:8642` con web search, o Groq). |
 | `health` / `boot` | Healthcheck y portero (`:7999`) para despertar el API. |
 
 `hermes` no tiene controller HTTP: lo llama `commands`.
@@ -35,10 +35,11 @@ Una feature no importa otra, **salvo** `commands`: orquesta voz y llama a `tv`, 
 mic → POST /commands/dispatch
      → Groq Whisper (castellano/inglés; si el STT sale en tamil/islandés/…, segundo pase language=es)
      → regex (catálogo de casa)
-     → si unknown: router Hermes (skills = catálogo; agentes: hoy solo chat)
+     → si unknown: router Groq (skills = catálogo; agentes: hoy solo chat)
      → comando capado → tv / ps5 / heating
      → japanese_turn → Groq tutor
-     → agent_turn → reply del chat
+     → conversation_turn → Hermes chat (web search si hay sidecar)
+     → agent_turn → reply one-shot en el hint
 ```
 
 El hint «Te oí» (`understood`) es una frase corta por Groq, **en paralelo** con la tele/PS5 (máx. 3 s desde que hay comando). Si no llega, el título del catálogo. No pasa por el sidecar Hermes (tools se comían el timeout del front).
@@ -61,13 +62,18 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-En `backend/.env`: `GROQ_API_KEY=gsk_...` (https://console.groq.com/keys). Si falta, el backend responde 503.
+En `backend/.env`: `GROQ_API_KEY=gsk_...` (https://console.groq.com/keys). Si falta, el backend responde 503. Opcional: `OPENAI_API_KEY` para la voz del chat (`gpt-4o-mini-tts`); sin ella o si OpenAI falla, Edge.
 
-Opcional — router Hermes en vez de Groq para `unknown`:
+Opcional — modo conversación con internet (sidecar Hermes):
 
 - `~/.hermes/.env`: `API_SERVER_ENABLED=true` y `API_SERVER_KEY`
 - `backend/.env`: `HERMES_API_URL=http://127.0.0.1:8642` y `HERMES_API_KEY` igual que esa key
-- `hermes gateway restart` (un solo proceso en `:8642`; no lances un segundo `hermes gateway`)
+- Toolset **web** (`web_search`, `web_extract`) en el API server. Sin terminal ni archivos. Nous Portal (`hermes setup --portal`) o keys tipo `FIRECRAWL` / `TAVILY`.
+- Skill + SOUL del anfitrión: `./scripts/install-hermes-spoken-chat.sh` (copia skill y `SOUL.md` a `~/.hermes`; el SOUL anterior queda en `SOUL.md.bak-besto`)
+- El audio de cada **respuesta** lo manda el backend: `OPENAI_API_KEY` → `gpt-4o-mini-tts` (voz `nova`, crío pequeño); si falta o falla (p. ej. 429), Edge. Los “un momento / a ver” son mp3 locales de la misma voz (`scripts/generate-conversation-fillers.py`). El tope de dinero es un **hard monthly limit** en un proyecto de OpenAI, no una env.
+- `hermes gateway restart` (un solo proceso en `:8642`)
+
+Sin URL Hermes, el modo conversación habla por Groq **sin** buscar en internet. El router de casa (`unknown`) **siempre** usa Groq.
 
 ```bash
 uvicorn app.main:app --reload --port 8000
@@ -75,7 +81,7 @@ uvicorn app.main:app --reload --port 8000
 
 Comprueba: http://localhost:8000/health
 
-`--reload` recarga código; un cambio en `.env` pide reiniciar uvicorn.
+`--reload` recarga código. Guardar `backend/.env` también recarga el proceso (uvicorn no vigila dotfiles; el backend toca un `.py` de marca).
 
 ### Frontend
 

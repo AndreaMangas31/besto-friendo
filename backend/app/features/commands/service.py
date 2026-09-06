@@ -6,8 +6,12 @@ from typing import Optional, Tuple
 
 from fastapi import UploadFile
 
+from app.features.commands.catalog import get_catalog
 from app.features.commands.models import CommandName, DispatchResponse, PracticeMode
 from app.features.conversation.service import run_turn_from_text, transcribe_upload
+from app.features.hermes.models import CatalogSkill, RouterIntent
+from app.features.hermes.service import rewrite_heard, route_unknown
+from app.shared.ai.factory import AiNotConfiguredError
 from app.features.heating.service import power_off as heating_power_off
 from app.features.heating.service import power_on as heating_power_on
 from app.features.heating.service import set_temperature as heating_set_temperature
@@ -29,6 +33,82 @@ from app.features.tv.service import volume_down as tv_volume_down
 from app.features.tv.service import volume_up as tv_volume_up
 
 logger = logging.getLogger(__name__)
+
+# El router nombra estos ids; japanese_turn no: con japonés on el regex ya no llega a unknown.
+_LUNA_SKILL = CatalogSkill(
+    id="call_luna",
+    title="Llamar a Luna",
+    example="llama a luna",
+    description="Easter egg: orejas y guau. No es un dispositivo.",
+    group="tutor",
+)
+
+
+def _router_skills() -> list[CatalogSkill]:
+    skills = [
+        CatalogSkill(
+            id=item.id,
+            title=item.title,
+            example=item.example,
+            description=item.description,
+            group=item.group,
+        )
+        for item in get_catalog().items
+    ]
+    skills.append(_LUNA_SKILL)
+    return skills
+
+
+def _catalog_title(command: str) -> str:
+    for item in get_catalog().items:
+        if item.id == command:
+            return item.title
+    if command == "call_luna":
+        return "Llamar a Luna"
+    if command == "agent_turn":
+        return "conversación"
+    return command
+
+
+_REWRITE_TIMEOUT_SEC = 3.0
+
+
+async def _with_understood(
+    resp: DispatchResponse,
+    heard_task: Optional[asyncio.Task[str]] = None,
+    heard_started: Optional[float] = None,
+) -> DispatchResponse:
+    # Tutor japonés y unknown confuso: el STT se enseña como está.
+    if resp.command in {"japanese_turn", "unknown"}:
+        if heard_task is not None and not heard_task.done():
+            heard_task.cancel()
+        return resp
+    title = _catalog_title(resp.command)
+    if heard_task is None:
+        resp.understood = title
+        return resp
+    phrase = ""
+    try:
+        if heard_task.done():
+            phrase = heard_task.result()
+        else:
+            remaining = _REWRITE_TIMEOUT_SEC
+            if heard_started is not None:
+                remaining = _REWRITE_TIMEOUT_SEC - (time.monotonic() - heard_started)
+            if remaining <= 0:
+                raise asyncio.TimeoutError
+            phrase = await asyncio.wait_for(heard_task, timeout=remaining)
+        logger.info("rewrite_heard ok command=%s", resp.command)
+    except asyncio.TimeoutError:
+        if not heard_task.done():
+            heard_task.cancel()
+        logger.info("rewrite_heard timeout command=%s", resp.command)
+        phrase = ""
+    except Exception as exc:
+        logger.info("rewrite_heard falló err=%s", exc)
+        phrase = ""
+    resp.understood = phrase or title
+    return resp
 
 
 def _normalize(text: str) -> str:
@@ -602,7 +682,8 @@ async def dispatch(
     mode: Optional[str],
 ) -> DispatchResponse:
     stt_started = time.perf_counter()
-    transcript = await transcribe_upload(audio)
+    # Casa: si Whisper pinta islandés (ð/þ), un segundo pase en es. Tutor japonés no.
+    transcript = await transcribe_upload(audio, retry_es=not japanese_enabled)
     stt_ms = (time.perf_counter() - stt_started) * 1000
     command, practice_mode = detect_command(transcript, japanese_enabled)
     logger.info(
@@ -614,16 +695,55 @@ async def dispatch(
         transcript[:120],
     )
 
+    router_intent: Optional[RouterIntent] = None
+    if command == "unknown":
+        try:
+            router_intent = await route_unknown(transcript, _router_skills())
+        except (AiNotConfiguredError, Exception) as exc:
+            # Casa por regex ya se resolvió; si el router cae, orbe confuso como antes.
+            logger.info("Router falló err=%s", exc)
+            router_intent = None
+        if router_intent and router_intent.command:
+            command = router_intent.command  # type: ignore[assignment]
+            if router_intent.practice_mode:
+                practice_mode = router_intent.practice_mode
+            logger.info("Router capado command=%s", command)
+        elif router_intent and router_intent.reply:
+            command = "agent_turn"
+
     if command == "japanese_turn":
         turn = await run_turn_from_text(transcript, history_json, mode)
         return DispatchResponse(command=command, transcript=transcript, turn=turn)
 
+    # Groq del hint a la vez que tele/PS5: no sumar 3s después del Cast.
+    heard_started = time.monotonic()
+    heard_task: Optional[asyncio.Task[str]] = None
+    if command != "unknown":
+        heard_task = asyncio.create_task(
+            rewrite_heard(transcript, command, _catalog_title(command))
+        )
+
+    async def finish(resp: DispatchResponse) -> DispatchResponse:
+        return await _with_understood(resp, heard_task, heard_started)
+
+    if command == "agent_turn":
+        return await finish(
+            DispatchResponse(
+                command="agent_turn",
+                transcript=transcript,
+                agent_id=router_intent.agent_id if router_intent else None,
+                agent_message=router_intent.reply if router_intent else None,
+            )
+        )
+
     # Easter egg: sin dispositivo. El frontend pone orejas y el guau.
     if command == "call_luna":
-        return DispatchResponse(
-            command=command,
-            transcript=transcript,
-            device_message="Luna te ha oído.",
+        return await finish(
+            DispatchResponse(
+                command=command,
+                transcript=transcript,
+                device_message="Luna te ha oído.",
+            )
         )
 
     if command == "ps5_power_on":
@@ -642,11 +762,13 @@ async def dispatch(
             hdmi.message,
         )
         extra = f" {hdmi.message}" if hdmi.message else ""
-        return DispatchResponse(
-            command=command,
-            transcript=transcript,
-            device_message=f"{result.message}{extra}".strip(),
-            ok=result.ok,
+        return await finish(
+            DispatchResponse(
+                command=command,
+                transcript=transcript,
+                device_message=f"{result.message}{extra}".strip(),
+                ok=result.ok,
+            )
         )
 
     if command == "ps5_power_off":
@@ -660,11 +782,13 @@ async def dispatch(
             (time.perf_counter() - started) * 1000,
             result.message,
         )
-        return DispatchResponse(
-            command=command,
-            transcript=transcript,
-            device_message=result.message,
-            ok=result.ok,
+        return await finish(
+            DispatchResponse(
+                command=command,
+                transcript=transcript,
+                device_message=result.message,
+                ok=result.ok,
+            )
         )
 
     if command == "tv_power_on":
@@ -678,15 +802,21 @@ async def dispatch(
             (time.perf_counter() - tv_started) * 1000,
             result.message,
         )
-        return DispatchResponse(
-            command=command,
-            transcript=transcript,
-            device_message=result.message,
-            ok=result.ok,
+        return await finish(
+            DispatchResponse(
+                command=command,
+                transcript=transcript,
+                device_message=result.message,
+                ok=result.ok,
+            )
         )
 
     if command == "tv_search":
-        query = _tv_search_query(_compact(transcript)) or ""
+        query = (
+            (router_intent.query if router_intent and router_intent.query else None)
+            or _tv_search_query(_compact(transcript))
+            or ""
+        )
         tv_started = time.perf_counter()
         result = await tv_search(query)
         logger.info(
@@ -698,15 +828,21 @@ async def dispatch(
             (time.perf_counter() - tv_started) * 1000,
             result.message,
         )
-        return DispatchResponse(
-            command=command,
-            transcript=transcript,
-            device_message=result.message,
-            ok=result.ok,
+        return await finish(
+            DispatchResponse(
+                command=command,
+                transcript=transcript,
+                device_message=result.message,
+                ok=result.ok,
+            )
         )
 
     if command == "tv_hdmi":
-        port = _tv_hdmi_port(_compact(transcript)) or 1
+        port = (
+            router_intent.hdmi
+            if router_intent and router_intent.hdmi
+            else _tv_hdmi_port(_compact(transcript))
+        ) or 1
         tv_started = time.perf_counter()
         result = await tv_select_hdmi(port)
         logger.info(
@@ -718,11 +854,13 @@ async def dispatch(
             (time.perf_counter() - tv_started) * 1000,
             result.message,
         )
-        return DispatchResponse(
-            command=command,
-            transcript=transcript,
-            device_message=result.message,
-            ok=result.ok,
+        return await finish(
+            DispatchResponse(
+                command=command,
+                transcript=transcript,
+                device_message=result.message,
+                ok=result.ok,
+            )
         )
 
     if command in {
@@ -742,7 +880,11 @@ async def dispatch(
         elif command == "heating_temp_down":
             result = await heating_temperature_down()
         else:
-            target = _heating_target_celsius(_compact(transcript))
+            target = (
+                router_intent.celsius
+                if router_intent and router_intent.celsius is not None
+                else _heating_target_celsius(_compact(transcript))
+            )
             if target is None:
                 result_message = "Te oí grados, pero no pillé el número (5–30)."
                 logger.info(
@@ -751,11 +893,13 @@ async def dispatch(
                     stt_ms,
                     result_message,
                 )
-                return DispatchResponse(
-                    command=command,
-                    transcript=transcript,
-                    device_message=result_message,
-                    ok=False,
+                return await finish(
+                    DispatchResponse(
+                        command=command,
+                        transcript=transcript,
+                        device_message=result_message,
+                        ok=False,
+                    )
                 )
             result = await heating_set_temperature(target)
         logger.info(
@@ -766,11 +910,13 @@ async def dispatch(
             (time.perf_counter() - started) * 1000,
             result.message,
         )
-        return DispatchResponse(
-            command=command,
-            transcript=transcript,
-            device_message=result.message,
-            ok=result.ok,
+        return await finish(
+            DispatchResponse(
+                command=command,
+                transcript=transcript,
+                device_message=result.message,
+                ok=result.ok,
+            )
         )
 
     action = _TV_REMOTE_ACTIONS.get(command)
@@ -785,15 +931,19 @@ async def dispatch(
             (time.perf_counter() - tv_started) * 1000,
             result.message,
         )
-        return DispatchResponse(
-            command=command,
-            transcript=transcript,
-            device_message=result.message,
-            ok=result.ok,
+        return await finish(
+            DispatchResponse(
+                command=command,
+                transcript=transcript,
+                device_message=result.message,
+                ok=result.ok,
+            )
         )
 
-    return DispatchResponse(
-        command=command,
-        transcript=transcript,
-        practice_mode=practice_mode,
+    return await finish(
+        DispatchResponse(
+            command=command,
+            transcript=transcript,
+            practice_mode=practice_mode,
+        )
     )

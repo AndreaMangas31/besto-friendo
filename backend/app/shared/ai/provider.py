@@ -7,8 +7,13 @@ class AiProvider(Protocol):
         audio: bytes,
         filename: str,
         content_type: str,
+        retry_es: bool = True,
     ) -> str:
         """Audio en bytes → texto."""
 
-    async def complete(self, messages: Sequence[dict]) -> str:
+    async def complete(
+        self,
+        messages: Sequence[dict],
+        temperature: float = 0.7,
+    ) -> str:
         """Lista estilo chat completions → texto del asistente."""

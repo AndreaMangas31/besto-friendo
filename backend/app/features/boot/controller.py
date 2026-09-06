@@ -15,13 +15,23 @@ router = APIRouter()
 _BOOT_HEADER = "x-besto-boot"
 
 
+def _secrets_match(got: str, expected: str) -> bool:
+    # compare_digest en str solo admite ASCII; BOOT_SECRET puede llevar ñ, etc.
+    left = got.encode("utf-8")
+    right = expected.encode("utf-8")
+    if len(left) != len(right):
+        secrets.compare_digest(right, right)
+        return False
+    return secrets.compare_digest(left, right)
+
+
 def require_boot_secret(request: Request) -> None:
     expected = (settings.boot_secret or "").strip()
     if not expected:
         # Sin secreto el portero sería un API público hacia tele/PS5.
         raise HTTPException(status_code=503, detail="Falta BOOT_SECRET en backend/.env")
     got = (request.headers.get(_BOOT_HEADER) or "").strip()
-    if not secrets.compare_digest(got, expected):
+    if not _secrets_match(got, expected):
         logger.warning("Portero: header X-Besto-Boot ausente o incorrecto")
         raise HTTPException(status_code=401, detail="X-Besto-Boot inválido")
 

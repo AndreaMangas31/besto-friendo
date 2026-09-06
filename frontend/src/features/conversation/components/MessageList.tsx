@@ -4,12 +4,21 @@ import type { ChatMessage, ContentBlock } from "@/features/conversation/types/tu
 type MessageListProps = {
   messages: ChatMessage[];
   onReplay?: (message: ChatMessage) => void;
+  compact?: boolean;
 };
 
-function AssistantBlocks({ blocks, speak }: { blocks: ContentBlock[]; speak?: string }) {
+function AssistantBlocks({
+  blocks,
+  speak,
+  compact,
+}: {
+  blocks: ContentBlock[];
+  speak?: string;
+  compact?: boolean;
+}) {
   if (blocks.length === 0) {
     return speak ? (
-      <p className="mt-1 text-lg leading-tight">{speak}</p>
+      <p className={`mt-1 leading-tight ${compact ? "" : "text-lg"}`}>{speak}</p>
     ) : null;
   }
 
@@ -28,9 +37,13 @@ function AssistantBlocks({ blocks, speak }: { blocks: ContentBlock[]; speak?: st
   );
 }
 
-export function MessageList({ messages, onReplay }: MessageListProps) {
+export function MessageList({ messages, onReplay, compact = false }: MessageListProps) {
   return (
-    <ul className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-1 py-2">
+    <ul
+      className={`flex min-h-0 flex-col px-1 py-2 ${
+        compact ? "gap-2" : "flex-1 gap-3 overflow-y-auto"
+      }`}
+    >
       {messages.map((message, index) => {
         const isUser = message.role === "user";
         const canReplay =
@@ -43,7 +56,9 @@ export function MessageList({ messages, onReplay }: MessageListProps) {
             className={`flex ${isUser ? "justify-end" : "justify-start"}`}
           >
             <div
-              className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${
+              className={`max-w-[85%] rounded-2xl px-3 py-2 ${
+                compact ? "text-xs leading-snug" : "text-sm"
+              } ${
                 isUser
                   ? "rounded-br-md bg-zinc-900 text-white"
                   : "rounded-bl-md bg-white text-zinc-900 shadow-sm ring-1 ring-zinc-100"
@@ -53,7 +68,11 @@ export function MessageList({ messages, onReplay }: MessageListProps) {
                 <p className="whitespace-pre-wrap">{message.text}</p>
               ) : (
                 <>
-                  <AssistantBlocks blocks={message.blocks ?? []} speak={message.speak} />
+                  <AssistantBlocks
+                    blocks={message.blocks ?? []}
+                    speak={message.speak || message.text}
+                    compact={compact}
+                  />
                   {canReplay && onReplay ? (
                     <button
                       type="button"

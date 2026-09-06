@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { BestoFriendoSuccessAnimation } from "@/features/conversation/components/BestoFriendoSuccessAnimation";
 import { ChatPanel } from "@/features/conversation/components/ChatPanel";
+import { ConversationTextTray } from "@/features/conversation/components/ConversationTextTray";
 import { IdleFooter } from "@/features/conversation/components/IdleFooter";
 import { ShellParticles } from "@/features/conversation/components/ShellParticles";
 import { TutorStage } from "@/features/conversation/components/TutorStage";
@@ -60,6 +61,7 @@ export function ConversationView() {
   const [lunaOn, setLunaOn] = useState(searchParams.get("luna") === "1");
   const [lunaPlayKey, setLunaPlayKey] = useState(0);
   const [heatingMood, setHeatingMood] = useState<HeatingMood>(orbPreview.mood);
+  const [showConversationText, setShowConversationText] = useState(false);
 
   const isRecording = recorder.status === "recording";
   const isSending = dispatcher.status === "sending";
@@ -110,6 +112,7 @@ export function ConversationView() {
     setConfused(false);
     const fromChat = conversationEnabled;
     setConversationEnabled(false);
+    setShowConversationText(false);
     setJapaneseEnabled(true);
     setOrbPersona("japanese");
     setHint(null);
@@ -124,6 +127,7 @@ export function ConversationView() {
     const fromJp = japaneseEnabled;
     setJapaneseEnabled(false);
     setConversationEnabled(true);
+    setShowConversationText(false);
     setOrbPersona("chat");
     setHint(null);
     setMessages((current) =>
@@ -143,6 +147,7 @@ export function ConversationView() {
   function closeConversationChat() {
     cancelSpeech();
     setConversationEnabled(false);
+    setShowConversationText(false);
     setMessages([]);
   }
 
@@ -232,7 +237,7 @@ export function ConversationView() {
             ? "speaking"
             : "idle";
 
-  const chatOpen = japaneseEnabled || conversationEnabled;
+  const japaneseOpen = japaneseEnabled;
   function handleCancelTurn() {
     dispatcher.cancel();
     cancelSpeech();
@@ -249,12 +254,12 @@ export function ConversationView() {
       <ShellParticles />
       <div
         className={`relative z-10 mx-auto flex h-full min-w-0 w-full max-w-full flex-1 flex-col ${
-          chatOpen ? "max-w-6xl md:flex-row" : "max-w-xl"
+          japaneseOpen ? "max-w-6xl md:flex-row" : "max-w-xl"
         }`}
       >
         <div
           className={`flex min-h-0 min-w-0 flex-col ${
-            chatOpen ? "md:w-[42%]" : "flex-1"
+            japaneseOpen ? "md:w-[42%]" : "flex-1"
           }`}
         >
           <TutorStage
@@ -268,25 +273,40 @@ export function ConversationView() {
             luna={lunaOn}
             lunaPlayKey={lunaPlayKey}
             heatingMood={heatingMood}
-            // En chat el CTA es Hablar del panel: el orbe compacto no graba.
-            onOrbPress={!chatOpen ? orbPress.onPress : undefined}
+            onOrbPress={!japaneseOpen ? orbPress.onPress : undefined}
             orbPressDisabled={isSending}
             poked={orbPress.poked}
             pokeMark={orbPress.pokeMark}
           />
 
-          {!chatOpen ? (
+          {!japaneseOpen ? (
             <IdleFooter
               isSending={isSending}
               hint={hint}
               recorderError={recorder.errorMessage}
               dispatchError={dispatcher.errorMessage}
               onCancel={handleCancelTurn}
+              listenLabel={
+                conversationEnabled ? "Un segundo…" : "Escuchando el comando…"
+              }
+            />
+          ) : null}
+
+          {conversationEnabled ? (
+            <ConversationTextTray
+              open={showConversationText}
+              messages={messages}
+              onToggle={() => setShowConversationText((current) => !current)}
+              onReplay={(message) => {
+                if (message.audioSrc) {
+                  playAudioSrc(message.audioSrc);
+                }
+              }}
             />
           ) : null}
         </div>
 
-        {chatOpen ? (
+        {japaneseOpen ? (
           <div className="flex min-w-0 flex-1 flex-col p-4 md:p-6">
             <ChatPanel
               messages={messages}

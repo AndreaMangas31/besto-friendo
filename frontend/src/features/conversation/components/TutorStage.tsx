@@ -64,7 +64,7 @@ export function TutorStage({
             {japaneseEnabled
               ? "Tutor de japonés. Habla o cambia de modo con la voz o los botones."
               : conversationEnabled
-                ? "Modo conversación. Pulsa Hablar; tele y casa esperan a que salgas."
+                ? "Pulsa el orbe para hablar con Besto. El texto es opcional."
                 : "Pulsa el orbe para hablar. El menú lista lo que puedes hacer."}
           </p>
         </div>
@@ -78,7 +78,7 @@ export function TutorStage({
           luna={luna}
           lunaPlayKey={lunaPlayKey}
           heatingMood={heatingMood}
-          hero={!japaneseEnabled && !conversationEnabled}
+          hero={!japaneseEnabled}
           onPress={onOrbPress}
           pressDisabled={orbPressDisabled}
           poked={poked}

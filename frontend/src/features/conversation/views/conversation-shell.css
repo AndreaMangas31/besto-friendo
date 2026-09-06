@@ -15,8 +15,8 @@
 }
 
 .conversation-shell[data-persona="chat"] {
-  --page-bg: linear-gradient(165deg, #eef2ff 0%, #e0e7ff 46%, #c7d2fe 100%);
-  --panel-bg: #c7d2fe;
+  --page-bg: linear-gradient(165deg, #fbf7f2 0%, #eef6fb 52%, #dbeafe 100%);
+  --panel-bg: #e8eef4;
 }
 
 .conversation-shell[data-persona="tv"] {
@@ -98,8 +98,8 @@
 }
 
 .conversation-shell[data-persona="chat"] .conversation-shell-particles span {
-  background: #a5b4fc;
-  box-shadow: 0 0 8px #c7d2fe;
+  background: #7dd3fc;
+  box-shadow: 0 0 8px #bae6fd;
   animation-name: shell-drift;
   animation-timing-function: ease-in-out;
 }

@@ -10,6 +10,7 @@ type IdleFooterProps = {
   recorderError: string | null;
   dispatchError: string | null;
   onCancel: () => void;
+  listenLabel?: string;
 };
 
 type BubbleTone = "listen" | "hint" | "error";
@@ -24,9 +25,10 @@ function resolveBubble(
   hint: string | null,
   recorderError: string | null,
   dispatchError: string | null,
+  listenLabel: string,
 ): BubbleContent | null {
   if (isSending) {
-    return { text: "Escuchando el comando…", tone: "listen" };
+    return { text: listenLabel, tone: "listen" };
   }
   if (recorderError) {
     return { text: recorderError, tone: "error" };
@@ -131,12 +133,14 @@ export function IdleFooter({
   recorderError,
   dispatchError,
   onCancel,
+  listenLabel = "Escuchando el comando…",
 }: IdleFooterProps) {
   const content = resolveBubble(
     isSending,
     hint,
     recorderError,
     dispatchError,
+    listenLabel,
   );
 
   return (

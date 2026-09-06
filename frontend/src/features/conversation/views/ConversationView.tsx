@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { BestoFriendoSuccessAnimation } from "@/features/conversation/components/BestoFriendoSuccessAnimation";
 import { ChatPanel } from "@/features/conversation/components/ChatPanel";
@@ -28,7 +28,13 @@ import "./conversation-shell.css";
 export function ConversationView() {
   const searchParams = useSearchParams();
   const orbPreview = orbPreviewFromParam(searchParams.get("orb"));
-  const recorder = useAudioRecorder();
+  const committingRef = useRef(false);
+  const voooyHoldRef = useRef<(holding: boolean) => void>(() => {});
+  const commitFromSilenceRef = useRef<() => void>(() => {});
+  const recorder = useAudioRecorder({
+    onSilenceHold: (holding) => voooyHoldRef.current(holding),
+    onEndpoint: () => commitFromSilenceRef.current(),
+  });
   const dispatcher = useDispatchCommand();
   const {
     speakJapanese,
@@ -162,44 +168,49 @@ export function ConversationView() {
   }
 
   async function handleTalkClick() {
-    if (isSending) {
+    if (isSending || committingRef.current) {
       return;
     }
 
     if (isRecording) {
-      const file = await recorder.stop();
-      if (!file) {
-        return;
-      }
+      committingRef.current = true;
+      try {
+        const file = await recorder.stop();
+        if (!file) {
+          return;
+        }
 
-      const result = await dispatcher.send(
-        file,
-        messages,
-        japaneseEnabled,
-        mode,
-        conversationEnabled,
-      );
-      // null = cancel, timeout 20s o error de red; el dispatcher ya pintó el mensaje.
-      if (!result) {
-        cancelSpeech();
-        return;
-      }
+        const result = await dispatcher.send(
+          file,
+          messages,
+          japaneseEnabled,
+          mode,
+          conversationEnabled,
+        );
+        // null = cancel, timeout 20s o error de red; el dispatcher ya pintó el mensaje.
+        if (!result) {
+          cancelSpeech();
+          return;
+        }
 
-      applyDispatchResult(result, {
-        openJapaneseChat,
-        openConversationChat,
-        applyPersona,
-        playLuna,
-        setHint,
-        setConfused,
-        setMode,
-        setMessages,
-        setHeatingMood,
-        setLunaOn,
-        celebrateDeviceSuccess,
-        speakJapanese,
-        playModelAudio,
-      });
+        applyDispatchResult(result, {
+          openJapaneseChat,
+          openConversationChat,
+          applyPersona,
+          playLuna,
+          setHint,
+          setConfused,
+          setMode,
+          setMessages,
+          setHeatingMood,
+          setLunaOn,
+          celebrateDeviceSuccess,
+          speakJapanese,
+          playModelAudio,
+        });
+      } finally {
+        committingRef.current = false;
+      }
       return;
     }
 
@@ -222,7 +233,12 @@ export function ConversationView() {
     cancelSpeech,
     onClearHint: () => setHint(null),
     onClearConfused: () => setConfused(false),
+    primeAudio: recorder.prime,
   });
+  voooyHoldRef.current = orbPress.setVoooyHold;
+  commitFromSilenceRef.current = () => {
+    talk();
+  };
 
   // listening > thinking > oops > confused: si no, OOPS pisa ESCUCHANDO al pulsar.
   const orbActivity = isRecording

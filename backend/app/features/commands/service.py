@@ -820,19 +820,25 @@ async def dispatch(
     if command == "ps5_power_on":
         started = time.perf_counter()
         result = await asyncio.to_thread(ps5_power_on)
-        # Sin señal la tele vuelve al launcher; HDMI cuando la Play ya está on.
-        hdmi = await tv_select_hdmi(1)
+        extra = ""
+        hdmi_ok: Optional[bool] = None
+        hdmi_msg = ""
+        if result.ok:
+            # Sin señal la tele vuelve al launcher; HDMI solo si la Play ya despertó.
+            hdmi = await tv_select_hdmi(1)
+            hdmi_ok = hdmi.ok
+            hdmi_msg = hdmi.message or ""
+            extra = f" {hdmi_msg}" if hdmi_msg else ""
         logger.info(
             "PS5 command=%s ok=%s stt_ms=%.0f ps5_ms=%.0f hdmi_ok=%s message=%s hdmi=%s",
             command,
             result.ok,
             stt_ms,
             (time.perf_counter() - started) * 1000,
-            hdmi.ok,
+            hdmi_ok,
             result.message,
-            hdmi.message,
+            hdmi_msg,
         )
-        extra = f" {hdmi.message}" if hdmi.message else ""
         return await finish(
             DispatchResponse(
                 command=command,

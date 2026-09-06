@@ -42,7 +42,7 @@ function caption(activity: OrbActivity): OrbCaption {
   if (activity === "listening") {
     return {
       title: "ESCUCHANDO",
-      subtitle: "Te oigo. Pulsa otra vez para enviar.",
+      subtitle: "Te oigo. Al callarte se envía.",
       icon: <IdleIcon activity={activity} />,
     };
   }

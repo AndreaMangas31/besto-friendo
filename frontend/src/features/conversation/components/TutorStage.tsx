@@ -62,10 +62,10 @@ export function TutorStage({
           </h1>
           <p className="mx-auto max-w-sm wrap-break-word px-1 text-zinc-600">
             {japaneseEnabled
-              ? "Tutor de japonés. Habla o cambia de modo con la voz o los botones."
+              ? "Tutor de japonés. Habla y al callarte se envía, o usa los botones."
               : conversationEnabled
-                ? "Pulsa el orbe para hablar con Besto. El texto es opcional."
-                : "Pulsa el orbe para hablar. El menú lista lo que puedes hacer."}
+                ? "Pulsa el orbe, habla y al callarte se envía. El texto es opcional."
+                : "Pulsa el orbe, habla y al callarte se envía. El menú lista lo que puedes hacer."}
           </p>
         </div>
       </div>

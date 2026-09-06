@@ -83,7 +83,7 @@ export function TutorOrb({
   const stageBody = (
     <>
       <LunaTail key={`luna-tail-${lunaPlayKey}`} />
-      {activity === "thinking" && !poked ? (
+      {activity === "thinking" ? (
         <span className="tutor-orb-think-mark">?</span>
       ) : null}
       {activity === "confused" && !poked ? (
@@ -91,7 +91,7 @@ export function TutorOrb({
           ???
         </span>
       ) : null}
-      {activity === "oops" || poked ? (
+      {activity !== "thinking" && (activity === "oops" || poked) ? (
         <span className="tutor-orb-think-mark tutor-orb-confused-mark tutor-orb-poke-mark">
           {pokeMark ?? "OOPS"}
         </span>

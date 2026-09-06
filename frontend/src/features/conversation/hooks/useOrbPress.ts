@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 /** Un ciclo de orb-confused-mark antes de abrir el micro. */
 const OOPS_MS = 550;
-/** Squash visible; en ESCUCHANDO no retrasamos el envío. */
+/** Squash visible al enviar; el hold de silencio no usa este timer. */
 const POKE_MS = 480;
 
 type UseOrbPressArgs = {
@@ -15,6 +15,7 @@ type UseOrbPressArgs = {
   cancelSpeech: () => void;
   onClearHint: () => void;
   onClearConfused: () => void;
+  primeAudio?: () => void;
 };
 
 export function useOrbPress({
@@ -25,12 +26,14 @@ export function useOrbPress({
   cancelSpeech,
   onClearHint,
   onClearConfused,
+  primeAudio,
 }: UseOrbPressArgs) {
   const [oopsing, setOopsing] = useState(false);
   const [poked, setPoked] = useState(false);
   const [pokeMark, setPokeMark] = useState<string | null>(null);
   const oopsTimerRef = useRef<number | null>(null);
   const pokeTimerRef = useRef<number | null>(null);
+  const voooyHoldRef = useRef(false);
 
   useEffect(() => {
     return () => {
@@ -43,7 +46,8 @@ export function useOrbPress({
     };
   }, []);
 
-  function flashPoke(mark: "OOPS" | "VOOOOY") {
+  const flashPoke = useCallback((mark: "OOPS" | "VOOOOY") => {
+    voooyHoldRef.current = false;
     setPokeMark(mark);
     setPoked(true);
     if (pokeTimerRef.current !== null) {
@@ -54,22 +58,43 @@ export function useOrbPress({
       setPoked(false);
       setPokeMark(null);
     }, POKE_MS);
-  }
+  }, []);
+
+  const setVoooyHold = useCallback((on: boolean) => {
+    if (on) {
+      if (pokeTimerRef.current !== null) {
+        window.clearTimeout(pokeTimerRef.current);
+        pokeTimerRef.current = null;
+      }
+      voooyHoldRef.current = true;
+      setPokeMark("VOOOOY");
+      setPoked(true);
+      return;
+    }
+
+    if (!voooyHoldRef.current) {
+      return;
+    }
+    voooyHoldRef.current = false;
+    setPoked(false);
+    setPokeMark(null);
+  }, []);
 
   function onPress() {
     if (isSending || oopsing) {
       return;
     }
 
-    // Segundo pulso: ya graba. VOOOOy y envío ya; el squash no espera.
+    // Segundo pulso: envío ya. VOOOOY solo lo pone el silencio al acabar la comanda.
     if (isRecording) {
-      flashPoke("VOOOOY");
+      setVoooyHold(false);
       onClearHint();
       commitRecording();
       return;
     }
 
     // Primer pulso: OOPS y luego micro (Safari pide gesto + getUserMedia).
+    primeAudio?.();
     flashPoke("OOPS");
     onClearHint();
     cancelSpeech();
@@ -82,5 +107,5 @@ export function useOrbPress({
     }, OOPS_MS);
   }
 
-  return { oopsing, poked, pokeMark, onPress };
+  return { oopsing, poked, pokeMark, onPress, setVoooyHold, flashPoke };
 }

@@ -2,7 +2,10 @@
 
 import { Menu as MenuIcon } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
-import type { CommandHelpGroup, CommandHelpItem } from "@/features/conversation/types/commands";
+import type {
+  CommandHelpGroup,
+  CommandHelpItem,
+} from "@/features/conversation/types/commands";
 
 type CommandHelpProps = {
   items: CommandHelpItem[];
@@ -21,7 +24,11 @@ const CAPABILITIES: {
   { group: "heating", emoji: "🏠", label: "Casa" },
 ];
 
-export function CommandHelp({ items, isLoading, errorMessage }: CommandHelpProps) {
+export function CommandHelp({
+  items,
+  isLoading,
+  errorMessage,
+}: CommandHelpProps) {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState<CommandHelpGroup | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -64,7 +71,7 @@ export function CommandHelp({ items, isLoading, errorMessage }: CommandHelpProps
     <div ref={rootRef} className="relative inline-flex">
       <button
         type="button"
-        className="flex h-7 w-7 items-center justify-center rounded-full border border-zinc-300 text-sm font-medium text-zinc-600 hover:bg-zinc-100"
+        className="flex h-7 w-7 bg-gray-900 items-center justify-center rounded-full border border-zinc-300 text-sm font-medium text-white hover:bg-gray-700 cursor-pointer"
         aria-expanded={open}
         aria-controls={panelId}
         aria-label="Qué puedo hacer"
@@ -108,7 +115,9 @@ export function CommandHelp({ items, isLoading, errorMessage }: CommandHelpProps
                           aria-controls={regionId}
                           onClick={() =>
                             setExpanded((current) =>
-                              current === capability.group ? null : capability.group,
+                              current === capability.group
+                                ? null
+                                : capability.group,
                             )
                           }
                         >
@@ -135,7 +144,9 @@ export function CommandHelp({ items, isLoading, errorMessage }: CommandHelpProps
 
 function HelpPhrases({ items }: { items: CommandHelpItem[] }) {
   if (items.length === 0) {
-    return <p className="text-xs text-zinc-500">Aún no hay frases para esto.</p>;
+    return (
+      <p className="text-xs text-zinc-500">Aún no hay frases para esto.</p>
+    );
   }
 
   return (

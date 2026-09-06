@@ -4,7 +4,11 @@ import { CommandHelp } from "@/features/conversation/components/CommandHelp";
 import { PracticeModes } from "@/features/conversation/components/PracticeModes";
 import { TutorOrb } from "@/features/conversation/components/TutorOrb";
 import { useCommandCatalog } from "@/features/conversation/hooks/useCommandCatalog";
-import type { HeatingMood, OrbActivity, OrbPersona } from "@/features/conversation/types/orb";
+import type {
+  HeatingMood,
+  OrbActivity,
+  OrbPersona,
+} from "@/features/conversation/types/orb";
 import type { PracticeMode } from "@/features/conversation/types/turn";
 
 type TutorStageProps = {
@@ -34,17 +38,18 @@ export function TutorStage({
 
   return (
     <section className="flex flex-col items-center justify-center gap-6 px-6 py-10">
-       <CommandHelp
-            items={catalog.items}
-            isLoading={catalog.isLoading}
-            errorMessage={catalog.errorMessage}
-          />
+      <div className="flex w-full justify-end">
+        <CommandHelp
+          items={catalog.items}
+          isLoading={catalog.isLoading}
+          errorMessage={catalog.errorMessage}
+        />
+      </div>
       <div className="space-y-2 text-center">
         <div className="flex items-center justify-center gap-2">
           <h1 className="text-3xl font-semibold tracking-tight text-zinc-900 md:text-4xl">
             Besto Friendo
           </h1>
-         
         </div>
         <p className="max-w-sm text-zinc-600">
           {japaneseEnabled

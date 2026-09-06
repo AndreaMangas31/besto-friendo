@@ -10,14 +10,21 @@ import { TutorStage } from "@/features/conversation/components/TutorStage";
 import { useAudioRecorder } from "@/features/conversation/hooks/useAudioRecorder";
 import { useDispatchCommand } from "@/features/conversation/hooks/useDispatchCommand";
 import { useSpeechPlayback } from "@/features/conversation/hooks/useSpeechPlayback";
-import { HEATING_COMMANDS, PS5_COMMANDS, TV_COMMANDS } from "@/features/conversation/types/commands";
+import {
+  HEATING_COMMANDS,
+  PS5_COMMANDS,
+  TV_COMMANDS,
+} from "@/features/conversation/types/commands";
 import {
   nextHeatingMood,
   nextOrbPersona,
   type HeatingMood,
   type OrbPersona,
 } from "@/features/conversation/types/orb";
-import type { ChatMessage, PracticeMode } from "@/features/conversation/types/turn";
+import type {
+  ChatMessage,
+  PracticeMode,
+} from "@/features/conversation/types/turn";
 import "./conversation-shell.css";
 
 const GREETING: ChatMessage = {
@@ -69,7 +76,9 @@ export function ConversationView() {
   const recorder = useAudioRecorder();
   const dispatcher = useDispatchCommand();
   const { speakJapanese, bark, cancel: cancelSpeech } = useSpeechPlayback();
-  const [japaneseEnabled, setJapaneseEnabled] = useState(orbPreview.japaneseEnabled);
+  const [japaneseEnabled, setJapaneseEnabled] = useState(
+    orbPreview.japaneseEnabled,
+  );
   const [orbPersona, setOrbPersona] = useState<OrbPersona>(orbPreview.persona);
   const [mode, setMode] = useState<PracticeMode>("conversar");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -155,7 +164,12 @@ export function ConversationView() {
         return;
       }
 
-      const result = await dispatcher.send(file, messages, japaneseEnabled, mode);
+      const result = await dispatcher.send(
+        file,
+        messages,
+        japaneseEnabled,
+        mode,
+      );
       if (!result) {
         return;
       }
@@ -180,7 +194,10 @@ export function ConversationView() {
       if (result.command === "set_practice_mode" && result.practice_mode) {
         setConfused(false);
         setMode(result.practice_mode);
-        setMessages((current) => [...current, modeNotice(result.practice_mode!)]);
+        setMessages((current) => [
+          ...current,
+          modeNotice(result.practice_mode!),
+        ]);
         return;
       }
 
@@ -194,7 +211,9 @@ export function ConversationView() {
 
       if (PS5_COMMANDS.has(result.command)) {
         setConfused(false);
-        const heard = result.transcript ? ` Te oí: “${result.transcript}”.` : "";
+        const heard = result.transcript
+          ? ` Te oí: “${result.transcript}”.`
+          : "";
         const fallback =
           result.command === "ps5_power_on"
             ? "Mandé despertar la PlayStation."
@@ -210,7 +229,9 @@ export function ConversationView() {
 
       if (TV_COMMANDS.has(result.command)) {
         setConfused(false);
-        const heard = result.transcript ? ` Te oí: “${result.transcript}”.` : "";
+        const heard = result.transcript
+          ? ` Te oí: “${result.transcript}”.`
+          : "";
         setHint(
           `${result.device_message ?? "Mandé el comando a la tele."}${heard}`,
         );
@@ -224,7 +245,9 @@ export function ConversationView() {
 
       if (HEATING_COMMANDS.has(result.command)) {
         setConfused(false);
-        const heard = result.transcript ? ` Te oí: “${result.transcript}”.` : "";
+        const heard = result.transcript
+          ? ` Te oí: “${result.transcript}”.`
+          : "";
         setHint(
           `${result.device_message ?? "Mandé el comando a la calefacción."}${heard}`,
         );
@@ -280,14 +303,14 @@ export function ConversationView() {
 
   return (
     <div
-      className="conversation-shell flex min-h-full flex-1 flex-col text-zinc-900"
+      className="conversation-shell flex min-h-[calc(100vh)] flex-1 flex-col text-zinc-900"
       data-persona={orbPersona}
       data-mood={heatingMood}
       data-luna={lunaOn ? "on" : "off"}
     >
       <ShellParticles />
       <div
-        className={`relative z-10 mx-auto flex w-full flex-1 flex-col ${
+        className={`relative z-10 mx-auto flex w-full h-full flex-1 flex-col ${
           japaneseEnabled ? "max-w-6xl md:flex-row" : "max-w-xl"
         }`}
       >
@@ -312,9 +335,13 @@ export function ConversationView() {
                 onClick={talk}
               />
               {isSending ? (
-                <p className="text-center text-sm text-zinc-500">Escuchando el comando…</p>
+                <p className="text-center text-sm text-zinc-500">
+                  Escuchando el comando…
+                </p>
               ) : null}
-              {hint ? <p className="text-center text-sm text-zinc-600">{hint}</p> : null}
+              {hint ? (
+                <p className="text-center text-sm text-zinc-600">{hint}</p>
+              ) : null}
               {recorder.errorMessage ? (
                 <p className="text-center text-sm text-red-700" role="alert">
                   {recorder.errorMessage}

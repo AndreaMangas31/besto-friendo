@@ -44,7 +44,7 @@ Abres [https://besto-friendo.vercel.app](https://besto-friendo.vercel.app). No v
 
 La página pide rutas que empiezan por `/bf-api` (mismo sitio, mismo origen). Un Route Handler en el servidor ([`frontend/src/app/bf-api/[...path]/route.ts`](../frontend/src/app/bf-api/[...path]/route.ts)) reenvía eso a `BACKEND_URL` (ngrok) y pone el header `X-Besto-Boot` con `BACKEND_WAKE_KEY`. Esos valores son Secrets de Vercel, no van en el JS.
 
-Si `GATE_PASSWORD` está definido, primero pide esa clave. El teléfono guarda un token HMAC (`X-Besto-Gate`), no la contraseña. Sin token válido, `/bf-api` responde 401 y no llama a ngrok. En `localhost` deja `GATE_PASSWORD` vacío.
+Si `GATE_PASSWORD` está definido (PIN de 6 dígitos), primero pide esa clave. El teléfono guarda un token HMAC (`X-Besto-Gate`), no la contraseña. Sin token válido, `/bf-api` responde 401 y no llama a ngrok. En `localhost` deja `GATE_PASSWORD` vacío.
 
 ### Ngrok
 

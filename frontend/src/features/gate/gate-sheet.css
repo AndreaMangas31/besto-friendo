@@ -1,0 +1,85 @@
+/* Lo que Tailwind no cubre: blob del mini-orbe, pupilas, Safari-ish keyframes. */
+
+@keyframes gate-sheet-in {
+  from {
+    transform: translateY(18%);
+    opacity: 0.4;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes gate-pin-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-10px);
+  }
+  40% {
+    transform: translateX(10px);
+  }
+  60% {
+    transform: translateX(-6px);
+  }
+  80% {
+    transform: translateX(6px);
+  }
+}
+
+@keyframes gate-orb-blob {
+  0%,
+  100% {
+    border-radius: 58% 42% 52% 48% / 46% 54% 46% 54%;
+  }
+  50% {
+    border-radius: 42% 58% 46% 54% / 54% 42% 58% 42%;
+  }
+}
+
+@keyframes gate-blink {
+  0%,
+  88%,
+  100% {
+    transform: scaleY(1);
+  }
+  92% {
+    transform: scaleY(0.12);
+  }
+}
+
+.gate-sheet-in {
+  animation: gate-sheet-in 0.42s ease-out;
+}
+
+.gate-pin-shake {
+  animation: gate-pin-shake 0.42s ease;
+}
+
+.gate-watch-body {
+  background:
+    radial-gradient(42% 38% at 32% 28%, rgba(255, 255, 255, 0.55) 0%, transparent 62%),
+    radial-gradient(80% 80% at 50% 58%, #1e3a5f 0%, #0b1220 58%, #38bdf8 100%);
+  box-shadow:
+    0 0 0 1px rgba(125, 211, 252, 0.35),
+    0 10px 24px rgba(56, 189, 248, 0.35),
+    inset 0 -10px 16px rgba(2, 8, 20, 0.55);
+  animation: gate-orb-blob 5.5s ease-in-out infinite;
+}
+
+.gate-watch-body--confused {
+  background:
+    radial-gradient(42% 38% at 32% 28%, rgba(250, 245, 255, 0.65) 0%, transparent 62%),
+    radial-gradient(80% 80% at 50% 58%, #4c1d95 0%, #2e1065 55%, #c4b5fd 100%);
+}
+
+.gate-eye-blink {
+  animation: gate-blink 4.2s ease-in-out infinite;
+}
+
+.gate-pupil-gaze {
+  transform: translate(calc(-50% + var(--gaze-x, 0px)), calc(-50% + var(--gaze-y, 0px)));
+}

@@ -1,9 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Besto Friendo">
-  <!-- Misma paleta que .tutor-orb idle: navy, halo cyan, ojitos. Fondo opaco (iOS). -->
-  <rect width="512" height="512" fill="#0b1220"/>
+  <!-- Bolita redonda, aire alrededor, fondo transparente. Paleta idle. -->
   <defs>
-    <radialGradient id="glow" cx="50%" cy="52%" r="48%">
-      <stop offset="55%" stop-color="#38bdf8" stop-opacity="0.38"/>
+    <radialGradient id="glow" cx="50%" cy="50%" r="42%">
+      <stop offset="60%" stop-color="#38bdf8" stop-opacity="0.28"/>
       <stop offset="100%" stop-color="#38bdf8" stop-opacity="0"/>
     </radialGradient>
     <radialGradient id="blob" cx="50%" cy="58%" r="72%">
@@ -15,17 +14,10 @@
       <stop offset="0%" stop-color="#ffffff" stop-opacity="0.55"/>
       <stop offset="62%" stop-color="#ffffff" stop-opacity="0"/>
     </radialGradient>
-    <clipPath id="blobClip">
-      <ellipse cx="256" cy="256" rx="168" ry="162"/>
-    </clipPath>
   </defs>
-  <circle cx="256" cy="256" r="230" fill="url(#glow)"/>
-  <ellipse cx="256" cy="256" rx="168" ry="162" fill="url(#blob)" stroke="rgba(125,211,252,0.35)" stroke-width="1.5"/>
-  <ellipse cx="256" cy="256" rx="168" ry="162" fill="url(#hi)"/>
-  <g clip-path="url(#blobClip)" fill="none" stroke="rgba(125,211,252,0.45)" stroke-width="2">
-    <ellipse cx="256" cy="256" rx="154" ry="64" transform="rotate(18 256 256)"/>
-    <ellipse cx="256" cy="256" rx="131" ry="54" transform="rotate(-12 256 256)" stroke="rgba(165,180,252,0.35)"/>
-  </g>
-  <rect x="206" y="214" width="28" height="68" rx="14" fill="#f8fafc"/>
-  <rect x="278" y="214" width="28" height="68" rx="14" fill="#f8fafc"/>
+  <circle cx="256" cy="256" r="210" fill="url(#glow)"/>
+  <circle cx="256" cy="256" r="148" fill="url(#blob)" stroke="rgba(125,211,252,0.35)" stroke-width="1.5"/>
+  <circle cx="256" cy="256" r="148" fill="url(#hi)"/>
+  <rect x="214" y="218" width="24" height="58" rx="12" fill="#f8fafc"/>
+  <rect x="274" y="218" width="24" height="58" rx="12" fill="#f8fafc"/>
 </svg>

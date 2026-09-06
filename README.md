@@ -55,6 +55,29 @@ El navegador **nunca** llama a `:8000` a pelo. Pide `/bf-api/...` al mismo Next;
 
 Cambia `BACKEND_URL` en Vercel → Redeploy. En local, reinicia `pnpm dev`.
 
+### Móvil: el túnel no lo abre el teléfono
+
+El móvil solo abre [https://besto-friendo.vercel.app](https://besto-friendo.vercel.app). Si el Mac está dormido o no hay `cloudflared`, no hay API.
+
+Al iniciar sesión en el Mac, un LaunchAgent puede levantar uvicorn + túnel:
+
+```bash
+./scripts/install-mac-launchagent.sh
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.bestofriendo.home-api.plist
+```
+
+Quick tunnel (`trycloudflare.com`): **URL nueva cada arranque** → hay que actualizar `BACKEND_URL` en Vercel.
+
+**URL fija (ngrok, plan gratis):**
+
+1. Cuenta en https://dashboard.ngrok.com/signup
+2. Authtoken: https://dashboard.ngrok.com/get-started/your-authtoken → `ngrok config add-authtoken TOKEN`
+3. El hostname fijo está en https://dashboard.ngrok.com/domains (tipo `xxxx.ngrok-free.dev`)
+4. En Vercel, Secret `BACKEND_URL=https://xxxx.ngrok-free.dev` **una vez**
+5. El script `scripts/mac-home-api.sh` usa ngrok si hay authtoken
+
+Túnel Cloudflare con nombre (`~/.cloudflared/config.yml`) también deja URL fija, pero pide un dominio en Cloudflare.
+
 ## Fase 2
 
 Grabar audio en el navegador y enviarlo a `POST /conversation/audio`.

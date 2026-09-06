@@ -9,7 +9,12 @@ import { useAudioRecorder } from "@/features/conversation/hooks/useAudioRecorder
 import { useDispatchCommand } from "@/features/conversation/hooks/useDispatchCommand";
 import { useSpeechPlayback } from "@/features/conversation/hooks/useSpeechPlayback";
 import { HEATING_COMMANDS, PS5_COMMANDS, TV_COMMANDS } from "@/features/conversation/types/commands";
-import { nextOrbPersona, type OrbPersona } from "@/features/conversation/types/orb";
+import {
+  nextHeatingMood,
+  nextOrbPersona,
+  type HeatingMood,
+  type OrbPersona,
+} from "@/features/conversation/types/orb";
 import type { ChatMessage, PracticeMode } from "@/features/conversation/types/turn";
 
 const GREETING: ChatMessage = {
@@ -50,6 +55,7 @@ export function ConversationView() {
   const [confused, setConfused] = useState(false);
   const [lunaOn, setLunaOn] = useState(false);
   const [lunaPlayKey, setLunaPlayKey] = useState(0);
+  const [heatingMood, setHeatingMood] = useState<HeatingMood>("cold");
 
   const clearSuccessAnimation = useCallback(() => {
     setSuccessPlayKey(null);
@@ -69,10 +75,14 @@ export function ConversationView() {
     if (params.get("burst") === "1") {
       setSuccessPlayKey(1);
     }
-    // ?orb=tv|play|japanese para ver el personaje sin el dispositivo.
+    // ?orb=tv|play|japanese|heating|heating-warm para ver el personaje sin el dispositivo.
     const preview = params.get("orb");
-    if (preview === "japanese" || preview === "tv" || preview === "play") {
+    if (preview === "japanese" || preview === "tv" || preview === "play" || preview === "heating") {
       setOrbPersona(preview);
+    }
+    if (preview === "heating-warm") {
+      setOrbPersona("heating");
+      setHeatingMood("warm");
     }
     // ?luna=1 enseña orejas + guau sin pasar por el micro.
     if (params.get("luna") === "1") {
@@ -205,6 +215,15 @@ export function ConversationView() {
           `${result.device_message ?? "Mandé el comando a la calefacción."}${heard}`,
         );
         celebrateDeviceSuccess(result.ok);
+        const persona = nextOrbPersona(result.command);
+        if (result.ok && persona) {
+          applyPersona(persona);
+        }
+        // Mood aparte de la persona: encender/bajar tiembla; subir/poner grados humito.
+        const mood = nextHeatingMood(result.command);
+        if (result.ok && mood) {
+          setHeatingMood(mood);
+        }
         return;
       }
 
@@ -262,6 +281,7 @@ export function ConversationView() {
             hideOrb={successPlayKey !== null}
             luna={lunaOn}
             lunaPlayKey={lunaPlayKey}
+            heatingMood={heatingMood}
           />
 
           {!japaneseEnabled ? (

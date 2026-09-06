@@ -4,7 +4,7 @@ import { CommandHelp } from "@/features/conversation/components/CommandHelp";
 import { PracticeModes } from "@/features/conversation/components/PracticeModes";
 import { TutorOrb } from "@/features/conversation/components/TutorOrb";
 import { useCommandCatalog } from "@/features/conversation/hooks/useCommandCatalog";
-import type { OrbActivity, OrbPersona } from "@/features/conversation/types/orb";
+import type { HeatingMood, OrbActivity, OrbPersona } from "@/features/conversation/types/orb";
 import type { PracticeMode } from "@/features/conversation/types/turn";
 
 type TutorStageProps = {
@@ -16,6 +16,7 @@ type TutorStageProps = {
   hideOrb?: boolean;
   luna?: boolean;
   lunaPlayKey?: number;
+  heatingMood?: HeatingMood;
 };
 
 export function TutorStage({
@@ -27,6 +28,7 @@ export function TutorStage({
   hideOrb = false,
   luna = false,
   lunaPlayKey = 0,
+  heatingMood = "cold",
 }: TutorStageProps) {
   const catalog = useCommandCatalog();
 
@@ -56,6 +58,7 @@ export function TutorStage({
         hidden={hideOrb}
         luna={luna}
         lunaPlayKey={lunaPlayKey}
+        heatingMood={heatingMood}
       />
 
       {japaneseEnabled ? (

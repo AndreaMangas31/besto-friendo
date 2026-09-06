@@ -1,5 +1,6 @@
 import "./orb-base.css";
-import type { OrbActivity, OrbPersona } from "@/features/conversation/types/orb";
+import type { HeatingMood, OrbActivity, OrbPersona } from "@/features/conversation/types/orb";
+import { heatingOrb } from "@/features/conversation/components/orbs/heating/HeatingOrb";
 import { idleOrb } from "@/features/conversation/components/orbs/idle/IdleOrb";
 import { japaneseOrb } from "@/features/conversation/components/orbs/japanese/JapaneseOrb";
 import { playOrb } from "@/features/conversation/components/orbs/play/PlayOrb";
@@ -11,6 +12,7 @@ const ORB_VARIANTS: Record<OrbPersona, OrbVariant> = {
   japanese: japaneseOrb,
   tv: tvOrb,
   play: playOrb,
+  heating: heatingOrb,
 };
 
 type TutorOrbProps = {
@@ -19,6 +21,7 @@ type TutorOrbProps = {
   hidden?: boolean;
   luna?: boolean;
   lunaPlayKey?: number;
+  heatingMood?: HeatingMood;
 };
 
 function LunaTail() {
@@ -50,12 +53,14 @@ export function TutorOrb({
   hidden = false,
   luna = false,
   lunaPlayKey = 0,
+  heatingMood = "cold",
 }: TutorOrbProps) {
   const variant = ORB_VARIANTS[persona];
   const Scene = variant.Scene;
+  const mood = persona === "heating" ? heatingMood : undefined;
   const copy = luna
     ? { title: "LUNA", subtitle: "Guau guau.", icon: null }
-    : variant.caption(activity);
+    : variant.caption(activity, mood);
 
   return (
     <div className={`flex flex-col items-center gap-4 ${hidden ? "invisible" : ""}`}>
@@ -63,6 +68,7 @@ export function TutorOrb({
         className={`tutor-orb-stage tutor-orb-stage--${persona}`}
         data-activity={activity}
         data-luna={luna ? "on" : "off"}
+        data-mood={mood}
         aria-hidden
       >
         <LunaTail key={`luna-tail-${lunaPlayKey}`} />
@@ -70,7 +76,7 @@ export function TutorOrb({
         {activity === "confused" ? (
           <span className="tutor-orb-think-mark tutor-orb-confused-mark">???</span>
         ) : null}
-        <Scene activity={activity} />
+        <Scene activity={activity} mood={mood} />
         <LunaFace key={`luna-face-${lunaPlayKey}`} />
       </div>
 

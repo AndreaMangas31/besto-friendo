@@ -127,6 +127,38 @@
   }
 }
 
+@keyframes orb-blob-heating {
+  0%,
+  100% {
+    border-radius: 52% 48% 54% 46% / 48% 52% 50% 50%;
+    transform: scale(1);
+  }
+  32% {
+    border-radius: 46% 54% 48% 52% / 54% 46% 52% 48%;
+    transform: scale(1.03);
+  }
+  66% {
+    border-radius: 56% 44% 50% 50% / 46% 54% 48% 52%;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes orb-blob-heating-wide {
+  0%,
+  100% {
+    border-radius: 54% 46% 56% 44% / 46% 54% 48% 52%;
+    transform: scale(1.02);
+  }
+  38% {
+    border-radius: 42% 58% 46% 54% / 58% 42% 54% 46%;
+    transform: scale(1.06);
+  }
+  72% {
+    border-radius: 58% 42% 52% 48% / 44% 56% 46% 54%;
+    transform: scale(1.04);
+  }
+}
+
 @keyframes orb-ring-spin {
   from {
     transform: translate(-50%, -50%) rotate(18deg);
@@ -325,6 +357,20 @@
 }
 
 .tutor-orb--play[data-activity="thinking"] {
+  animation-duration: 8.5s;
+}
+
+.tutor-orb--heating {
+  border-radius: 52% 48% 54% 46% / 48% 52% 50% 50%;
+  animation-name: orb-blob-heating;
+}
+
+.tutor-orb--heating[data-activity="listening"] {
+  animation-name: orb-blob-heating-wide;
+  animation-duration: 4.2s;
+}
+
+.tutor-orb--heating[data-activity="thinking"] {
   animation-duration: 8.5s;
 }
 

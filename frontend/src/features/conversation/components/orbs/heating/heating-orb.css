@@ -1,0 +1,231 @@
+/* El morph del blob usa transform: el temblor va en el stage para no pisarlo. */
+@keyframes orb-heat-shiver {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-1.5px);
+  }
+  50% {
+    transform: translateX(1.5px);
+  }
+  75% {
+    transform: translateX(-1px);
+  }
+}
+
+@keyframes orb-heat-steam {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.6);
+  }
+  25% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-42px) scale(1.15);
+  }
+}
+
+@keyframes orb-heat-tail-flutter {
+  0%,
+  100% {
+    transform: rotate(16deg) skewX(-8deg);
+  }
+  50% {
+    transform: rotate(24deg) skewX(-8deg);
+  }
+}
+
+.tutor-orb-stage--heating {
+  --scarf-stripe: repeating-linear-gradient(
+    90deg,
+    #be123c 0 10px,
+    #fff7ed 10px 16px,
+    #0ea5e9 16px 26px,
+    #fff7ed 26px 32px
+  );
+}
+
+.tutor-orb-stage--heating[data-mood="cold"] {
+  animation: orb-heat-shiver 0.55s ease-in-out infinite;
+}
+
+/* Frío: blanco helado, no el blob azul oscuro del idle. */
+.tutor-orb.tutor-orb--heating {
+  overflow: hidden;
+  background:
+    radial-gradient(42% 38% at 30% 26%, #ffffff 0%, transparent 58%),
+    radial-gradient(80% 80% at 50% 58%, #f8fafc 0%, #e2e8f0 48%, #bae6fd 125%);
+  box-shadow:
+    0 0 0 1px rgba(186, 230, 253, 0.75),
+    0 16px 40px rgba(125, 211, 252, 0.28),
+    inset 0 -16px 24px rgba(148, 163, 184, 0.28);
+}
+
+.tutor-orb.tutor-orb--heating[data-mood="warm"] {
+  background:
+    radial-gradient(42% 38% at 32% 28%, rgba(255, 247, 237, 0.75) 0%, transparent 62%),
+    radial-gradient(80% 80% at 50% 58%, #9a3412 0%, #7c2d12 52%, #fb923c 120%);
+  box-shadow:
+    0 0 0 1px rgba(253, 186, 116, 0.7),
+    0 16px 40px rgba(234, 88, 12, 0.38),
+    inset 0 -14px 22px rgba(67, 20, 7, 0.4);
+}
+
+.tutor-orb-eye.tutor-orb-eye--heating {
+  z-index: 2;
+  top: 28%;
+  width: 16%;
+  height: 18%;
+  border-radius: 50%;
+  /* En el blob blanquito los ojos blancos se pierden. */
+  background: #334155;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.15);
+}
+
+.tutor-orb--heating[data-mood="warm"] .tutor-orb-eye--heating {
+  background: #f8fafc;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.85);
+}
+
+.tutor-orb-eye--heating.tutor-orb-eye--left {
+  left: 26%;
+}
+
+.tutor-orb-eye--heating.tutor-orb-eye--right {
+  right: 26%;
+}
+
+.tutor-orb-eye--heating.tutor-orb-eye--listening {
+  top: 26%;
+  width: 18%;
+  height: 20%;
+}
+
+.tutor-orb-eye--heating.tutor-orb-eye--thinking {
+  animation: orb-think-glance 2.8s ease-in-out infinite;
+}
+
+.tutor-orb-eye--heating.tutor-orb-eye--confused {
+  animation: orb-confused-glance 1.15s ease-in-out infinite;
+}
+
+.tutor-orb-heat-scarf-wrap {
+  position: absolute;
+  z-index: 3;
+  left: -12%;
+  right: -12%;
+  top: 64%;
+  height: 22%;
+  background: var(--scarf-stripe);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.4),
+    0 3px 8px rgba(15, 23, 42, 0.18);
+}
+
+.tutor-orb-heat-scarf-knot {
+  position: absolute;
+  z-index: 4;
+  left: 64%;
+  top: 66%;
+  width: 20%;
+  height: 15%;
+  border-radius: 48% 42% 50% 45%;
+  background: var(--scarf-stripe);
+  box-shadow: 0 2px 5px rgba(15, 23, 42, 0.22);
+  transform: rotate(28deg);
+}
+
+/* Cabo fuera del blob para que cuelgue; overflow hidden lo recortaría. */
+.tutor-orb-heat-scarf-tail {
+  position: absolute;
+  z-index: 3;
+  right: 20%;
+  bottom: 1%;
+  width: 15%;
+  height: 26%;
+  border-radius: 10px 14px 4px 4px;
+  background: var(--scarf-stripe);
+  box-shadow: 0 4px 8px rgba(15, 23, 42, 0.16);
+  transform: rotate(16deg) skewX(-8deg);
+  transform-origin: 50% 0;
+  pointer-events: none;
+}
+
+/* Pelitos que cuelgan del corte; el overflow del cabo los recortaría. */
+.tutor-orb-heat-scarf-tail::after {
+  content: "";
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  top: 96%;
+  height: 38%;
+  background: repeating-linear-gradient(
+    90deg,
+    #be123c 0 1.5px,
+    transparent 1.5px 3px,
+    #0ea5e9 3px 4.5px,
+    transparent 4.5px 6px,
+    #fff7ed 6px 7.5px,
+    transparent 7.5px 9px
+  );
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% 55%,
+    88% 100%,
+    76% 50%,
+    64% 95%,
+    52% 45%,
+    40% 100%,
+    28% 50%,
+    16% 90%,
+    4% 40%,
+    0 80%
+  );
+}
+
+.tutor-orb-heat-scarf-tail[data-mood="cold"] {
+  animation: orb-heat-tail-flutter 0.7s ease-in-out infinite;
+}
+
+.tutor-orb-heat-steam {
+  position: absolute;
+  z-index: 4;
+  top: 8%;
+  width: 14%;
+  height: 18%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.95) 0%, rgba(254, 215, 170, 0.15) 70%);
+  filter: blur(1px);
+  pointer-events: none;
+  animation: orb-heat-steam 1.8s ease-out infinite;
+}
+
+.tutor-orb-heat-steam--a {
+  left: 32%;
+  animation-delay: 0s;
+}
+
+.tutor-orb-heat-steam--b {
+  left: 46%;
+  width: 18%;
+  height: 22%;
+  animation-delay: 0.45s;
+}
+
+.tutor-orb-heat-steam--c {
+  left: 58%;
+  animation-delay: 0.9s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tutor-orb-stage--heating[data-mood="cold"],
+  .tutor-orb-heat-steam,
+  .tutor-orb-heat-scarf-tail[data-mood="cold"] {
+    animation: none;
+  }
+}

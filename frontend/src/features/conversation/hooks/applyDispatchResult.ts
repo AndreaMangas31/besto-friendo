@@ -27,14 +27,14 @@ export type ApplyDispatchHandlers = {
   speakJapanese: (text: string) => void;
 };
 
-/** “Te oí” usa la frase entendida; el STT crudo no se enseña si hay understood. */
+/** “Te oí” solo con understood. El STT crudo (tamil, islandés…) no se enseña. */
 function hintWithHeard(message: string, heard: string): string {
   const bit = heard ? ` Te oí: “${heard}”.` : "";
   return `${message}${bit}`;
 }
 
 function heardPhrase(result: DispatchResponse): string {
-  return result.understood?.trim() || result.transcript;
+  return result.understood?.trim() ?? "";
 }
 
 export function applyDispatchResult(
@@ -160,9 +160,5 @@ export function applyDispatchResult(
   }
 
   handlers.setConfused(true);
-  handlers.setHint(
-    result.transcript
-      ? `No encajó como comando de activar. Te oí algo como: “${result.transcript}”.`
-      : "No encajó como comando. Di enable japanese mode, más o menos.",
-  );
+  handlers.setHint("No encajó como comando. Prueba otra vez o mira la lista.");
 }

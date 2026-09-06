@@ -102,6 +102,13 @@ CATALOG = CommandCatalogResponse(
             group="tv",
         ),
         CommandHelpItem(
+            id="tv_hdmi",
+            title="Entrada HDMI",
+            example="hdmi 1",
+            description="Mismo gesto para 1–4: al primero de Entradas y luego N abajo (hdmi 2 = una más que hdmi 1).",
+            group="tv",
+        ),
+        CommandHelpItem(
             id="ps5_power_on",
             title="Encender PlayStation",
             example="enciende la PS5",

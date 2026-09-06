@@ -44,3 +44,5 @@ npm-debug.log*
 uploads/
 tmp/
 *.pem
+
+.cursor/

@@ -331,6 +331,35 @@ def _is_tv_open_netflix(compact: str) -> bool:
     return not _has_media_control_verb(compact)
 
 
+def _tv_hdmi_port(compact: str) -> Optional[int]:
+    # Whisper: "hdmi", "hd mi". Sin número = HDMI 1 (la Play).
+    blob = _collapsed(compact)
+    if "hdmi" not in blob:
+        return None
+    words = {
+        "uno": 1,
+        "una": 1,
+        "dos": 2,
+        "segundo": 2,
+        "tres": 3,
+        "tercero": 3,
+        "cuatro": 4,
+        "cuarto": 4,
+        "one": 1,
+        "two": 2,
+        "too": 2,
+        "three": 3,
+        "four": 4,
+    }
+    for word, port in words.items():
+        if re.search(rf"\b{word}\b", compact):
+            return port
+    match = re.search(r"\b([1-4])\b", compact)
+    if match:
+        return int(match.group(1))
+    return 1
+
+
 def _tv_search_query(compact: str) -> Optional[str]:
     # "busca" se come el tutor. "ok tele gatos" / "okay tv cats".
     blob = re.sub(r"\bt\s+v\b", "tv", compact)
@@ -353,6 +382,8 @@ def _detect_tv_command(compact: str) -> Optional[CommandName]:
     # no debe caer en el fallback de encender por nombre+tv.
     if _tv_search_query(compact):
         return "tv_search"
+    if _tv_hdmi_port(compact) is not None:
+        return "tv_hdmi"
     if _is_tv_open_youtube(compact):
         return "tv_open_youtube"
     if _is_tv_open_netflix(compact):
@@ -443,6 +474,7 @@ async def dispatch(
     if command == "ps5_power_on":
         started = time.perf_counter()
         result = await asyncio.to_thread(ps5_power_on)
+        # Sin señal la tele vuelve al launcher; HDMI cuando la Play ya está on.
         hdmi = await tv_select_hdmi(1)
         logger.info(
             "PS5 command=%s ok=%s stt_ms=%.0f ps5_ms=%.0f hdmi_ok=%s message=%s hdmi=%s",
@@ -507,6 +539,26 @@ async def dispatch(
             command,
             result.ok,
             len(query),
+            stt_ms,
+            (time.perf_counter() - tv_started) * 1000,
+            result.message,
+        )
+        return DispatchResponse(
+            command=command,
+            transcript=transcript,
+            device_message=result.message,
+            ok=result.ok,
+        )
+
+    if command == "tv_hdmi":
+        port = _tv_hdmi_port(_compact(transcript)) or 1
+        tv_started = time.perf_counter()
+        result = await tv_select_hdmi(port)
+        logger.info(
+            "TV command=%s ok=%s hdmi=%s stt_ms=%.0f tv_ms=%.0f message=%s",
+            command,
+            result.ok,
+            port,
             stt_ms,
             (time.perf_counter() - tv_started) * 1000,
             result.message,

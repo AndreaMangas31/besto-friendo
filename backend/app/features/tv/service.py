@@ -458,10 +458,63 @@ async def send_key(key: str, repeats: int, label: str) -> TvActionResult:
         remote.disconnect()
 
 
+async def _click(remote: AndroidTVRemote, key: str, pause: float) -> None:
+    # SHORT tras el intent HOME lo ignora el launcher. Pulso + suelto, como el mando.
+    remote.send_key_command(key, "START_LONG")
+    await asyncio.sleep(0.08)
+    remote.send_key_command(key, "END_LONG")
+    await asyncio.sleep(pause)
+
+
 async def select_hdmi(input_n: int = 1) -> TvActionResult:
-    # Tecla HDMI_n del mando Android. La Play está en el 1.
+    # Dos HOME. Principal: 2 UP, 5 RIGHT, OK Entradas. Lista: UP al primero, DOWN HDMI.
     n = max(1, min(4, int(input_n)))
-    return await send_key(f"TV_INPUT_HDMI_{n}", 1, f"HDMI {n}")
+    ups = max(0, int(settings.tv_hdmi1_up))
+    rights = max(0, int(settings.tv_hdmi1_right))
+    tops = max(0, int(settings.tv_hdmi1_top))
+    downs = max(0, int(settings.tv_hdmi1_down)) + (n - 1)
+    remote, name, error = await _connect_remote()
+    if error or remote is None:
+        return TvActionResult(ok=False, message=error)
+
+    try:
+        await _click(remote, "HOME", 0.5)
+        await _click(remote, "HOME", 1.6)
+        for _ in range(ups):
+            await _click(remote, "DPAD_UP", 0.35)
+        for _ in range(rights):
+            await _click(remote, "DPAD_RIGHT", 0.35)
+        await _click(remote, "DPAD_CENTER", 0.8)
+        for _ in range(tops):
+            await _click(remote, "DPAD_UP", 0.12)
+        await asyncio.sleep(0.2)
+        for _ in range(downs):
+            await _click(remote, "DPAD_DOWN", 0.3)
+        await _click(remote, "DPAD_CENTER", 0.6)
+        logger.info(
+            "Android TV hdmi=%s up=%s rights=%s top=%s downs=%s name=%s",
+            n,
+            ups,
+            rights,
+            tops,
+            downs,
+            name,
+        )
+        return TvActionResult(
+            ok=True,
+            message=f"Mandé HDMI {n} a {name} ({downs} abajo desde el primero).",
+        )
+    except ConnectionClosed as exc:
+        logger.info("Android TV hdmi sin conexión name=%s err=%s", name, exc)
+        return TvActionResult(ok=False, message=f"Se cortó el mando con {name}: {exc}")
+    except Exception as exc:
+        logger.exception("Android TV hdmi falló n=%s name=%s", n, name)
+        return TvActionResult(
+            ok=False,
+            message=f"Conecté a {name} pero no pude ir a HDMI {n}: {exc}",
+        )
+    finally:
+        remote.disconnect()
 
 
 async def volume_up() -> TvActionResult:

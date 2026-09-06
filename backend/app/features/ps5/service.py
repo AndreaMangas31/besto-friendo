@@ -293,15 +293,8 @@ async def power_off() -> Ps5ActionResult:
         )
 
     logger.info("PS5 standby host=%s user=%s ok=%s", host, user, ok)
-    if ok:
-        return Ps5ActionResult(
-            ok=True,
-            message=f"Mandé a reposo {host}. Puede no verse LED naranja; sigue en la red.",
-        )
+    # False = la sesión RP se corta al ir a reposo; no es un crash y el comando sí salió.
     return Ps5ActionResult(
-        ok=False,
-        message=(
-            f"Remote Play no confirmó el reposo de {host}. "
-            + _REGISTER_HINT.format(host=host)
-        ),
+        ok=True,
+        message=f"Mandé a reposo {host}. Puede no verse LED naranja; sigue en la red.",
     )

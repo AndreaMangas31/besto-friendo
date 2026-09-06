@@ -41,7 +41,7 @@ export function BestoFriendoSuccessAnimation({
 
   return (
     <div
-      className="bff-success pointer-events-none fixed inset-0 z-50 flex items-center justify-center"
+      className="bff-success pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-black/20"
       aria-hidden
     >
       {/* key: si llega otro éxito seguido, CSS vuelve a 0ms sin desmontar el overlay. */}
@@ -49,7 +49,7 @@ export function BestoFriendoSuccessAnimation({
         <div className="bff-success-backdrop absolute inset-0 bg-zinc-950/70" />
 
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="bff-success-orb tutor-orb h-64 w-64 opacity-80 blur-[1px] md:h-80 md:w-80" />
+          <div className="bff-success-orb tutor-orb h-64 w-64 opacity-80 blur-[1px] md:h-80 md:w-80 rounded-full" />
         </div>
 
         <div className="absolute inset-0 flex items-center justify-center p-6">

@@ -24,6 +24,11 @@ class Settings(BaseSettings):
     ps5_mac: str = ""
     # Perfil pyremoteplay. Vacío = el primero registrado para esa consola.
     ps5_user: str = ""
+    # Tras reset: 2 UP, 5 RIGHT (Entradas). La lista recuerda el último: TOP UP al primero, luego DOWN HDMI 1.
+    tv_hdmi1_up: int = 2
+    tv_hdmi1_right: int = 5
+    tv_hdmi1_top: int = 12
+    tv_hdmi1_down: int = 5
 
 
 settings = Settings()

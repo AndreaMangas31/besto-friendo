@@ -1,10 +1,12 @@
 import type { ConversationTurnResponse, PracticeMode } from "@/features/conversation/types/turn";
 
 export type CommandName =
+// Tutor
   | "enable_japanese_mode"
   | "disable_japanese_mode"
   | "set_practice_mode"
   | "japanese_turn"
+  // TV
   | "tv_power_on"
   | "tv_power_off"
   | "tv_volume_up"
@@ -16,6 +18,8 @@ export type CommandName =
   | "tv_open_youtube"
   | "tv_open_netflix"
   | "tv_search"
+  | "tv_hdmi"
+  // PS5
   | "ps5_power_on"
   | "ps5_power_off"
   | "unknown";
@@ -59,6 +63,7 @@ export const TV_COMMANDS: ReadonlySet<CommandName> = new Set([
   "tv_open_youtube",
   "tv_open_netflix",
   "tv_search",
+  "tv_hdmi",
 ]);
 
 export const PS5_COMMANDS: ReadonlySet<CommandName> = new Set([

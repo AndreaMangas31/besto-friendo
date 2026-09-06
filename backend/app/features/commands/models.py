@@ -20,6 +20,7 @@ CommandName = Literal[
     "tv_open_youtube",
     "tv_open_netflix",
     "tv_search",
+    "tv_hdmi",
     "ps5_power_on",
     "ps5_power_off",
     "unknown",
@@ -42,6 +43,7 @@ CommandHelpId = Literal[
     "tv_open_youtube",
     "tv_open_netflix",
     "tv_search",
+    "tv_hdmi",
     "ps5_power_on",
     "ps5_power_off",
 ]

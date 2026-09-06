@@ -5,7 +5,8 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
     app_name: str = "besto-friendo"
-    frontend_origin: str = "http://localhost:3000"
+    # Coma-separados: http://localhost:3000,https://xxx.vercel.app
+    frontend_origin: str = "http://localhost:3000, https://besto-friendo.vercel.app"
 
     # groq | (más adelante openai, etc.). La key NUNCA va al frontend.
     ai_provider: str = "groq"

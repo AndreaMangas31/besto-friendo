@@ -48,6 +48,13 @@ Abre: http://localhost:3000
 
 Si el backend está parado, la página debe mostrar un error claro de conexión.
 
+El navegador **nunca** llama a `:8000` a pelo. Pide `/bf-api/...` al mismo Next; Next reescribe a `BACKEND_URL` ([`frontend/next.config.ts`](frontend/next.config.ts)).
+
+- **Local** (`pnpm dev`): `BACKEND_URL=http://localhost:8000` en `.env.local`. No hay túnel ni Vercel. Mac → Next :3000 → uvicorn :8000.
+- **Móvil / Vercel**: el JS sigue pidiendo `/bf-api` a `besto-friendo.vercel.app`. En Vercel, `BACKEND_URL` es **Secret** (la URL de `cloudflared`). El túnel no va al bundle.
+
+Cambia `BACKEND_URL` en Vercel → Redeploy. En local, reinicia `pnpm dev`.
+
 ## Fase 2
 
 Grabar audio en el navegador y enviarlo a `POST /conversation/audio`.

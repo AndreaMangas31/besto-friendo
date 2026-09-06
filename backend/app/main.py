@@ -4,6 +4,7 @@ from fastapi import FastAPI
 
 from app.core.config import settings
 from app.core.cors import setup_cors
+# FRONTEND_ORIGIN (Vercel + local) se lee al importar settings; un cambio en .env pide reload.
 from app.features.commands.controller import router as commands_router
 from app.features.conversation.controller import router as conversation_router
 from app.features.health.controller import router as health_router

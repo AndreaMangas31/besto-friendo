@@ -3,7 +3,7 @@ import type { CommandName } from "@/features/conversation/types/commands";
 
 export type OrbPersona = "idle" | "japanese" | "tv" | "play";
 
-export type OrbActivity = "idle" | "listening" | "thinking";
+export type OrbActivity = "idle" | "listening" | "thinking" | "confused";
 
 /** null = el comando no cambia el personaje (turno de chat, unknown, práctica). */
 export function nextOrbPersona(command: CommandName): OrbPersona | null {

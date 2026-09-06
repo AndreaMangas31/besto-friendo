@@ -122,6 +122,41 @@ CATALOG = CommandCatalogResponse(
             description="La manda a reposo, no al menú Apagar PS5. También: duerme la play.",
             group="ps5",
         ),
+        CommandHelpItem(
+            id="heating_power_on",
+            title="Encender calefacción",
+            example="enciende la calefacción",
+            description="Pone la zona en modo manual (MIGo Link).",
+            group="heating",
+        ),
+        CommandHelpItem(
+            id="heating_power_off",
+            title="Apagar calefacción",
+            example="apaga la calefacción",
+            description="Apaga la zona. Hace falta decir calefacción/termostato.",
+            group="heating",
+        ),
+        CommandHelpItem(
+            id="heating_temp_up",
+            title="Subir un grado",
+            example="sube la calefacción",
+            description="Suma 1 °C a la consigna. No uses ‘sube’ suelto (eso es volumen).",
+            group="heating",
+        ),
+        CommandHelpItem(
+            id="heating_temp_down",
+            title="Bajar un grado",
+            example="baja la calefacción",
+            description="Resta 1 °C a la consigna.",
+            group="heating",
+        ),
+        CommandHelpItem(
+            id="heating_set_temp",
+            title="Poner temperatura",
+            example="pon 21 grados",
+            description="Fija esa consigna. También: pon la calefacción a 21.",
+            group="heating",
+        ),
     ]
 )
 

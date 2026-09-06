@@ -22,6 +22,12 @@ export type CommandName =
   // PS5
   | "ps5_power_on"
   | "ps5_power_off"
+  // Calefacción (MIGo Link)
+  | "heating_power_on"
+  | "heating_power_off"
+  | "heating_temp_up"
+  | "heating_temp_down"
+  | "heating_set_temp"
   | "unknown";
 
 export type DispatchResponse = {
@@ -35,7 +41,7 @@ export type DispatchResponse = {
 
 export type DispatchStatus = "idle" | "sending" | "ok" | "error";
 
-export type CommandHelpGroup = "tutor" | "tv" | "ps5";
+export type CommandHelpGroup = "tutor" | "tv" | "ps5" | "heating";
 
 export type CommandHelpId = Exclude<CommandName, "japanese_turn" | "unknown">;
 
@@ -69,4 +75,12 @@ export const TV_COMMANDS: ReadonlySet<CommandName> = new Set([
 export const PS5_COMMANDS: ReadonlySet<CommandName> = new Set([
   "ps5_power_on",
   "ps5_power_off",
+]);
+
+export const HEATING_COMMANDS: ReadonlySet<CommandName> = new Set([
+  "heating_power_on",
+  "heating_power_off",
+  "heating_temp_up",
+  "heating_temp_down",
+  "heating_set_temp",
 ]);

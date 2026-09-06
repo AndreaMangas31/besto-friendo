@@ -8,7 +8,7 @@ import { TutorStage } from "@/features/conversation/components/TutorStage";
 import { useAudioRecorder } from "@/features/conversation/hooks/useAudioRecorder";
 import { useDispatchCommand } from "@/features/conversation/hooks/useDispatchCommand";
 import { useSpeechPlayback } from "@/features/conversation/hooks/useSpeechPlayback";
-import { PS5_COMMANDS, TV_COMMANDS } from "@/features/conversation/types/commands";
+import { HEATING_COMMANDS, PS5_COMMANDS, TV_COMMANDS } from "@/features/conversation/types/commands";
 import { nextOrbPersona, type OrbPersona } from "@/features/conversation/types/orb";
 import type { ChatMessage, PracticeMode } from "@/features/conversation/types/turn";
 
@@ -47,6 +47,7 @@ export function ConversationView() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [hint, setHint] = useState<string | null>(null);
   const [successPlayKey, setSuccessPlayKey] = useState<number | null>(null);
+  const [confused, setConfused] = useState(false);
 
   const clearSuccessAnimation = useCallback(() => {
     setSuccessPlayKey(null);
@@ -74,9 +75,16 @@ export function ConversationView() {
 
   const isRecording = recorder.status === "recording";
   const isSending = dispatcher.status === "sending";
-  const orbActivity = isRecording ? "listening" : isSending ? "thinking" : "idle";
+  const orbActivity = isRecording
+    ? "listening"
+    : isSending
+      ? "thinking"
+      : confused
+        ? "confused"
+        : "idle";
 
   function openJapaneseChat() {
+    setConfused(false);
     setJapaneseEnabled(true);
     setOrbPersona("japanese");
     setHint(null);
@@ -120,18 +128,21 @@ export function ConversationView() {
       }
 
       if (result.command === "disable_japanese_mode") {
+        setConfused(false);
         applyPersona("idle");
         setHint(null);
         return;
       }
 
       if (result.command === "set_practice_mode" && result.practice_mode) {
+        setConfused(false);
         setMode(result.practice_mode);
         setMessages((current) => [...current, modeNotice(result.practice_mode!)]);
         return;
       }
 
       if (PS5_COMMANDS.has(result.command)) {
+        setConfused(false);
         const heard = result.transcript ? ` Te oí: “${result.transcript}”.` : "";
         const fallback =
           result.command === "ps5_power_on"
@@ -147,6 +158,7 @@ export function ConversationView() {
       }
 
       if (TV_COMMANDS.has(result.command)) {
+        setConfused(false);
         const heard = result.transcript ? ` Te oí: “${result.transcript}”.` : "";
         setHint(
           `${result.device_message ?? "Mandé el comando a la tele."}${heard}`,
@@ -159,7 +171,18 @@ export function ConversationView() {
         return;
       }
 
+      if (HEATING_COMMANDS.has(result.command)) {
+        setConfused(false);
+        const heard = result.transcript ? ` Te oí: “${result.transcript}”.` : "";
+        setHint(
+          `${result.device_message ?? "Mandé el comando a la calefacción."}${heard}`,
+        );
+        celebrateDeviceSuccess(result.ok);
+        return;
+      }
+
       if (result.command === "japanese_turn" && result.turn) {
+        setConfused(false);
         const turn = result.turn;
         setMessages((current) => [
           ...current,
@@ -177,6 +200,7 @@ export function ConversationView() {
         return;
       }
 
+      setConfused(true);
       setHint(
         result.transcript
           ? `No encajó como comando de activar. Te oí algo como: “${result.transcript}”.`
@@ -186,6 +210,7 @@ export function ConversationView() {
     }
 
     speech.cancel();
+    setConfused(false);
     await recorder.start();
   }
 

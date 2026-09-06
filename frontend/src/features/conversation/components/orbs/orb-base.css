@@ -142,14 +142,69 @@
   }
 }
 
-@keyframes orb-blink {
+@keyframes orb-think-glance {
   0%,
-  90%,
-  100% {
-    transform: scaleY(1);
+  12% {
+    transform: translate(0, 0);
   }
-  94% {
-    transform: scaleY(0.1);
+  22%,
+  38% {
+    transform: translate(-22%, 4%);
+  }
+  48%,
+  62% {
+    transform: translate(22%, 4%);
+  }
+  72%,
+  84% {
+    transform: translate(0, -16%);
+  }
+  92%,
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+@keyframes orb-confused-mark {
+  0%,
+  100% {
+    transform: translateX(-50%) translateY(0) rotate(-14deg) scale(1);
+  }
+  25% {
+    transform: translateX(-42%) translateY(-6px) rotate(12deg) scale(1.08);
+  }
+  50% {
+    transform: translateX(-58%) translateY(-2px) rotate(-18deg) scale(1.04);
+  }
+  75% {
+    transform: translateX(-46%) translateY(-8px) rotate(8deg) scale(1.1);
+  }
+}
+
+@keyframes orb-confused-glance {
+  0%,
+  8% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  16%,
+  28% {
+    transform: translate(-28%, 8%) rotate(-12deg);
+  }
+  36%,
+  48% {
+    transform: translate(32%, -6%) rotate(14deg);
+  }
+  56%,
+  68% {
+    transform: translate(-12%, -18%) rotate(-6deg);
+  }
+  76%,
+  88% {
+    transform: translate(18%, 10%) rotate(8deg);
+  }
+  94%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
   }
 }
 
@@ -157,6 +212,29 @@
   position: relative;
   width: 14rem;
   height: 14rem;
+}
+
+.tutor-orb-think-mark {
+  position: absolute;
+  z-index: 5;
+  top: -0.15rem;
+  left: 58%;
+  font-size: 1.85rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #334155;
+  text-shadow: 0 1px 0 #fff;
+  pointer-events: none;
+  animation: orb-think-mark 1.1s ease-in-out infinite;
+}
+
+.tutor-orb-confused-mark {
+  left: 50%;
+  top: -0.35rem;
+  font-size: 1.55rem;
+  letter-spacing: 0.04em;
+  color: #7f1d1d;
+  animation: orb-confused-mark 0.55s ease-in-out infinite;
 }
 
 @media (min-width: 768px) {
@@ -191,6 +269,21 @@
 
 .tutor-orb--idle[data-activity="thinking"] {
   animation-duration: 8.5s;
+}
+
+/* Idle confundido: lila, que se note el “ehhh???”. */
+.tutor-orb.tutor-orb--idle[data-activity="confused"] {
+  background:
+    radial-gradient(42% 38% at 32% 28%, rgba(250, 245, 255, 0.65) 0%, transparent 62%),
+    radial-gradient(80% 80% at 50% 58%, #4c1d95 0%, #2e1065 55%, #c4b5fd 100%);
+  box-shadow:
+    0 0 0 1px rgba(196, 181, 253, 0.5),
+    0 18px 50px rgba(167, 139, 250, 0.45),
+    inset 0 -18px 28px rgba(46, 16, 101, 0.55);
+}
+
+.tutor-orb-stage--idle .tutor-orb-confused-mark {
+  color: #6d28d9;
 }
 
 .tutor-orb--japanese {
@@ -272,15 +365,11 @@
 }
 
 .tutor-orb-eye--thinking {
-  animation: none;
-  top: 32%;
-  width: 13%;
-  height: 14%;
+  animation: orb-think-glance 2.8s ease-in-out infinite;
 }
 
-.tutor-orb-eye--right.tutor-orb-eye--thinking {
-  top: 35%;
-  height: 11%;
+.tutor-orb-eye--confused {
+  animation: orb-confused-glance 1.15s ease-in-out infinite;
 }
 
 .tutor-orb-ring {
@@ -313,7 +402,9 @@
   .tutor-orb,
   .tutor-orb-ring,
   .tutor-orb-dots,
-  .tutor-orb-eye {
+  .tutor-orb-eye,
+  .tutor-orb-think-mark,
+  .tutor-orb-confused-mark {
     animation: none;
   }
 }

@@ -49,6 +49,9 @@ function caption(activity: OrbActivity): OrbCaption {
   if (activity === "thinking") {
     return { title: "JAPANESE MODE", subtitle: "Pensando el turno…", icon };
   }
+  if (activity === "confused") {
+    return { title: "JAPANESE MODE", subtitle: "Ehhh??? No te pillo.", icon };
+  }
   return {
     title: "JAPANESE MODE",
     subtitle: "Modo japonés activo.",

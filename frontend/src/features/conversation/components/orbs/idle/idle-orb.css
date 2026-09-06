@@ -1,1 +1,20 @@
 /* Idle usa la esfera y anillos de orb-base.css. */
+
+/* Confundido en reposo: lila, que se note el “ehhh???”. */
+.tutor-orb.tutor-orb--idle[data-activity="confused"] {
+  background:
+    radial-gradient(42% 38% at 32% 28%, rgba(250, 245, 255, 0.65) 0%, transparent 62%),
+    radial-gradient(80% 80% at 50% 58%, #4c1d95 0%, #2e1065 55%, #c4b5fd 100%);
+  box-shadow:
+    0 0 0 1px rgba(196, 181, 253, 0.5),
+    0 18px 50px rgba(167, 139, 250, 0.45),
+    inset 0 -18px 28px rgba(46, 16, 101, 0.55);
+}
+
+.tutor-orb-stage--idle[data-activity="confused"] .tutor-orb-confused-mark {
+  color: #6d28d9;
+}
+
+.tutor-orb-stage--idle[data-activity="confused"] .tutor-orb-ring {
+  border-color: rgba(196, 181, 253, 0.55);
+}

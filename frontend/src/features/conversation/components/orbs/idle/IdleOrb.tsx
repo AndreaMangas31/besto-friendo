@@ -53,6 +53,9 @@ function caption(activity: OrbActivity): OrbCaption {
       icon: <IdleIcon activity={activity} />,
     };
   }
+  if (activity === "confused") {
+    return { title: "EHHHH???", subtitle: "No te pillo.", icon: null };
+  }
   return { title: "Tu BBFF", subtitle: null, icon: null };
 }
 

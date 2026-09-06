@@ -8,6 +8,11 @@ from fastapi import UploadFile
 
 from app.features.commands.models import CommandName, DispatchResponse, PracticeMode
 from app.features.conversation.service import run_turn_from_text, transcribe_upload
+from app.features.heating.service import power_off as heating_power_off
+from app.features.heating.service import power_on as heating_power_on
+from app.features.heating.service import set_temperature as heating_set_temperature
+from app.features.heating.service import temperature_down as heating_temperature_down
+from app.features.heating.service import temperature_up as heating_temperature_up
 from app.features.ps5.service import power_off as ps5_power_off
 from app.features.ps5.service import power_on as ps5_power_on
 from app.features.tv.service import back as tv_back
@@ -407,6 +412,126 @@ def _detect_tv_command(compact: str) -> Optional[CommandName]:
     return None
 
 
+_HEATING_TEMP_WORDS = {
+    "cinco": 5,
+    "seis": 6,
+    "siete": 7,
+    "ocho": 8,
+    "nueve": 9,
+    "diez": 10,
+    "once": 11,
+    "doce": 12,
+    "trece": 13,
+    "catorce": 14,
+    "quince": 15,
+    "dieciseis": 16,
+    "dieciséis": 16,
+    "diecisiete": 17,
+    "dieciocho": 18,
+    "diecinueve": 19,
+    "veinte": 20,
+    "veintiuno": 21,
+    "veintiun": 21,
+    "veintiún": 21,
+    "veintidos": 22,
+    "veintidós": 22,
+    "veintitres": 23,
+    "veintitrés": 23,
+    "veinticuatro": 24,
+    "veinticinco": 25,
+    "veintiseis": 26,
+    "veintiséis": 26,
+    "veintisiete": 27,
+    "veintiocho": 28,
+    "veintinueve": 29,
+    "treinta": 30,
+}
+
+
+def _has_heating_device(compact: str) -> bool:
+    blob = _collapsed(compact)
+    return any(
+        token in blob for token in ("calefacci", "termostato", "caldera", "migo")
+    )
+
+
+def _has_grados(compact: str) -> bool:
+    return "grado" in _collapsed(compact)
+
+
+def _heating_target_celsius(compact: str) -> Optional[float]:
+    # Whisper suele dejar "21"; las palabras cubren dieciséis–treinta.
+    if re.search(r"\bveinti\s+un[oa]?\b", compact):
+        return 21.0
+    for word, value in _HEATING_TEMP_WORDS.items():
+        if re.search(rf"\b{re.escape(word)}\b", compact):
+            return float(value)
+    match = re.search(r"\b(\d{1,2}(?:[.,]\d)?)\b", compact)
+    if not match:
+        return None
+    value = float(match.group(1).replace(",", "."))
+    if 5 <= value <= 30:
+        return value
+    return None
+
+
+def _is_heating_temp_down(compact: str) -> bool:
+    if not _has_heating_device(compact):
+        return False
+    blob = _collapsed(compact)
+    return any(
+        token in blob for token in ("baja", "bajar", "baje", "menos", "disminu")
+    )
+
+
+def _is_heating_temp_up(compact: str) -> bool:
+    if not _has_heating_device(compact):
+        return False
+    if _is_heating_temp_down(compact):
+        return False
+    blob = _collapsed(compact)
+    return any(
+        token in blob
+        for token in ("sube", "subi", "subir", "aument", "mas", "más", "alza", "calor")
+    )
+
+
+def _is_heating_off(compact: str) -> bool:
+    if not _has_heating_device(compact):
+        return False
+    return _has_tv_off_verb(compact)
+
+
+def _is_heating_on(compact: str) -> bool:
+    if not _has_heating_device(compact):
+        return False
+    if _is_heating_off(compact) and not _has_tv_on_verb(compact):
+        return False
+    if _has_tv_on_verb(compact):
+        return True
+    blob = _collapsed(compact)
+    return any(token in blob for token in ("pon", "poner", "activa"))
+
+
+def _detect_heating_command(compact: str) -> Optional[CommandName]:
+    target = _heating_target_celsius(compact)
+    has_device = _has_heating_device(compact)
+    has_grados = _has_grados(compact)
+    if not has_device and not (target is not None and has_grados):
+        return None
+    if target is not None and (has_grados or has_device):
+        return "heating_set_temp"
+    if _is_heating_temp_down(compact):
+        return "heating_temp_down"
+    if _is_heating_temp_up(compact):
+        return "heating_temp_up"
+    if _is_heating_off(compact):
+        return "heating_power_off"
+    if _is_heating_on(compact):
+        return "heating_power_on"
+    return None
+
+
 def detect_command(
     transcript: str,
     japanese_enabled: bool,
@@ -425,6 +550,10 @@ def detect_command(
     tv_command = _detect_tv_command(compact)
     if tv_command:
         return tv_command, None
+
+    heating_command = _detect_heating_command(compact)
+    if heating_command:
+        return heating_command, None
 
     if japanese_enabled:
         practice = _detect_practice_mode(compact)
@@ -561,6 +690,54 @@ async def dispatch(
             port,
             stt_ms,
             (time.perf_counter() - tv_started) * 1000,
+            result.message,
+        )
+        return DispatchResponse(
+            command=command,
+            transcript=transcript,
+            device_message=result.message,
+            ok=result.ok,
+        )
+
+    if command in {
+        "heating_power_on",
+        "heating_power_off",
+        "heating_temp_up",
+        "heating_temp_down",
+        "heating_set_temp",
+    }:
+        started = time.perf_counter()
+        if command == "heating_power_on":
+            result = await heating_power_on()
+        elif command == "heating_power_off":
+            result = await heating_power_off()
+        elif command == "heating_temp_up":
+            result = await heating_temperature_up()
+        elif command == "heating_temp_down":
+            result = await heating_temperature_down()
+        else:
+            target = _heating_target_celsius(_compact(transcript))
+            if target is None:
+                result_message = "Te oí grados, pero no pillé el número (5–30)."
+                logger.info(
+                    "Heating command=%s ok=False stt_ms=%.0f message=%s",
+                    command,
+                    stt_ms,
+                    result_message,
+                )
+                return DispatchResponse(
+                    command=command,
+                    transcript=transcript,
+                    device_message=result_message,
+                    ok=False,
+                )
+            result = await heating_set_temperature(target)
+        logger.info(
+            "Heating command=%s ok=%s stt_ms=%.0f heat_ms=%.0f message=%s",
+            command,
+            result.ok,
+            stt_ms,
+            (time.perf_counter() - started) * 1000,
             result.message,
         )
         return DispatchResponse(

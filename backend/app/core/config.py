@@ -30,5 +30,12 @@ class Settings(BaseSettings):
     tv_hdmi1_top: int = 12
     tv_hdmi1_down: int = 5
 
+    # Cuenta de la app MIGo Link (Saunier Duval). Vacío = comandos de calefacción no van.
+    migo_email: str = ""
+    migo_password: str = ""
+    # myPyllant usa sdbg para Saunier Duval / MIGo Link, no el nombre de la marca.
+    migo_brand: str = "sdbg"
+    migo_country: str = "spain"
+
 
 settings = Settings()

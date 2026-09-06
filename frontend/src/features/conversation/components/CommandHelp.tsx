@@ -13,9 +13,10 @@ const GROUP_LABEL: Record<CommandHelpGroup, string> = {
   tutor: "Tutor",
   tv: "Tele",
   ps5: "PS5",
+  heating: "Calefacción",
 };
 
-const GROUP_ORDER: CommandHelpGroup[] = ["tutor", "tv", "ps5"];
+const GROUP_ORDER: CommandHelpGroup[] = ["tutor", "tv", "ps5", "heating"];
 
 export function CommandHelp({ items, isLoading, errorMessage }: CommandHelpProps) {
   const [open, setOpen] = useState(false);

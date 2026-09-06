@@ -35,6 +35,9 @@ function caption(activity: OrbActivity): OrbCaption {
   if (activity === "thinking") {
     return { title: "PLAY MODE", subtitle: "Calculando el combo…", icon };
   }
+  if (activity === "confused") {
+    return { title: "PLAY MODE", subtitle: "Ehhh??? Combo ilegal.", icon };
+  }
   return {
     title: "PLAY MODE",
     subtitle: "Astro listo. A jugar.",

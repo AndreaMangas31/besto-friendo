@@ -71,15 +71,11 @@
 }
 
 .tutor-orb-eye--play.tutor-orb-eye--thinking {
-  top: 40%;
-  width: 18%;
-  height: 10%;
-  border-radius: 50%;
+  animation: orb-think-glance 2.8s ease-in-out infinite;
 }
 
-.tutor-orb-eye--play.tutor-orb-eye--right.tutor-orb-eye--thinking {
-  top: 42%;
-  height: 8%;
+.tutor-orb-eye--play.tutor-orb-eye--confused {
+  animation: orb-confused-glance 1.15s ease-in-out infinite;
 }
 
 .tutor-orb-ps-btn {

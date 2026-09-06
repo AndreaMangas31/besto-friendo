@@ -188,24 +188,12 @@
   top: 40%;
 }
 
-.tutor-orb--tv[data-activity="thinking"] .tutor-orb-tv-goggle {
-  top: 30%;
-  height: 28%;
-}
-
 .tutor-orb--tv[data-activity="thinking"] .tutor-orb-tv-pupil {
-  animation: none;
-  top: 6%;
-  height: 48%;
+  animation: orb-think-glance 2.8s ease-in-out infinite;
 }
 
-.tutor-orb--tv[data-activity="thinking"] .tutor-orb-tv-goggle--right .tutor-orb-tv-pupil {
-  top: 30%;
-  left: 38%;
-}
-
-.tutor-orb--tv[data-activity="thinking"] .tutor-orb-tv-bridge {
-  top: 40%;
+.tutor-orb--tv[data-activity="confused"] .tutor-orb-tv-pupil {
+  animation: orb-confused-glance 1.15s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {

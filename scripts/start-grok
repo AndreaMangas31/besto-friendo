@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
-# start-grok: portero (:7999, a la escucha) + túnel ngrok. El tutor :8000 lo enciende el portero.
+# start-grok: portero (:7999) + Hermes API (:8642) + túnel ngrok. El tutor :8000 lo enciende el portero.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BACKEND="${ROOT}/backend"
 LOGDIR="${HOME}/Library/Logs/besto-friendo"
 NGROK_URL="https://pug-stump-approve.ngrok-free.dev"
+# LaunchAgent no trae ~/.local/bin (donde el installer pone `hermes`).
+export PATH="${HOME}/.local/bin:/opt/homebrew/bin:/usr/local/bin:${PATH}"
 mkdir -p "$LOGDIR"
 
-echo "start-grok: portero + túnel (el tutor :8000 sale solo al usar el móvil)"
+echo "start-grok: portero + Hermes + túnel (el tutor :8000 sale solo al usar el móvil)"
 
 if ! lsof -nP -iTCP:7999 -sTCP:LISTEN >/dev/null 2>&1; then
   # shellcheck source=/dev/null
@@ -29,6 +31,41 @@ for _ in $(seq 1 40); do
   fi
   sleep 0.5
 done
+
+# Sidecar del router. El installer de Hermes lo pone en launchd: `hermes gateway`
+# en foreground choca. Si :8642 no está, restart/start del servicio.
+_hermes=""
+if command -v hermes >/dev/null 2>&1; then
+  _hermes="$(command -v hermes)"
+elif [[ -x "${HOME}/.local/bin/hermes" ]]; then
+  _hermes="${HOME}/.local/bin/hermes"
+fi
+_wait_hermes_api() {
+  for _ in $(seq 1 40); do
+    if lsof -nP -iTCP:8642 -sTCP:LISTEN >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 0.5
+  done
+  return 1
+}
+if [[ -n "$_hermes" ]]; then
+  if lsof -nP -iTCP:8642 -sTCP:LISTEN >/dev/null 2>&1; then
+    echo "hermes :8642 ya estaba"
+  else
+    echo "hermes gateway restart (servicio launchd)"
+    if ! "$_hermes" gateway restart >>"${LOGDIR}/hermes.log" 2>&1; then
+      "$_hermes" gateway start >>"${LOGDIR}/hermes.log" 2>&1 || true
+    fi
+    if _wait_hermes_api; then
+      echo "hermes API en :8642"
+    else
+      echo "hermes :8642 no escuchó. Mira ${LOGDIR}/hermes.log (API_SERVER_ENABLED en ~/.hermes/.env)" >&2
+    fi
+  fi
+else
+  echo "sin binario hermes; el router de Besto seguirá en Groq" >&2
+fi
 
 if command -v ngrok >/dev/null 2>&1; then
   _ngrok_cfg="${HOME}/Library/Application Support/ngrok/ngrok.yml"

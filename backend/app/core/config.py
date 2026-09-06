@@ -11,8 +11,12 @@ class Settings(BaseSettings):
     # groq | (más adelante openai, etc.). La key NUNCA va al frontend.
     ai_provider: str = "groq"
     groq_api_key: str = ""
-    groq_stt_model: str = "whisper-large-v3-turbo"
+    groq_stt_model: str = "whisper-large-v3"
     groq_chat_model: str = "openai/gpt-oss-120b"
+
+    # Sidecar Hermes (OpenAI-compatible). Vacío = el router usa Groq.
+    hermes_api_url: str = ""
+    hermes_api_key: str = ""
 
     # Nombre Cast (substring). Vacío = primer Chromecast / el que parezca TV.
     tv_cast_name: str = ""

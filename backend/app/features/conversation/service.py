@@ -62,7 +62,7 @@ def _parse_history(raw: Optional[str]) -> List[TutorTurn]:
     return parsed
 
 
-async def transcribe_upload(audio: UploadFile) -> str:
+async def transcribe_upload(audio: UploadFile, *, retry_es: bool = True) -> str:
     try:
         provider = get_ai_provider()
     except AiNotConfiguredError as exc:
@@ -77,7 +77,9 @@ async def transcribe_upload(audio: UploadFile) -> str:
 
     started = time.perf_counter()
     try:
-        user_text = await provider.transcribe(payload, filename, content_type)
+        user_text = await provider.transcribe(
+            payload, filename, content_type, retry_es=retry_es
+        )
     except APIError as exc:
         logger.exception("Error de Groq en STT")
         raise HTTPException(
@@ -91,10 +93,11 @@ async def transcribe_upload(audio: UploadFile) -> str:
             detail="No se transcribió texto. Prueba a hablar más cerca del micrófono.",
         )
     logger.info(
-        "STT listo chars=%s ms=%.0f filename=%s",
+        "STT listo chars=%s ms=%.0f filename=%s retry_es=%s",
         len(user_text),
         (time.perf_counter() - started) * 1000,
         filename,
+        retry_es,
     )
     return user_text
 
@@ -145,5 +148,5 @@ async def run_turn(
     history_json: Optional[str],
     mode: Optional[str] = None,
 ) -> ConversationTurnResponse:
-    user_text = await transcribe_upload(audio)
+    user_text = await transcribe_upload(audio, retry_es=False)
     return await run_turn_from_text(user_text, history_json, mode)

@@ -1,22 +1,51 @@
 # Besto Friendo
 
-Tutor de conversación en japonés. Monorepo con frontend Next.js y backend FastAPI.
-
-## Fase 1
-
-Comprobar que el frontend y el backend se comunican (`GET /health`).
+Asistente de voz en casa (tele, PS5, calefacción) y tutor de japonés. Monorepo: frontend Next.js, backend FastAPI. Las API keys de IA solo viven en el backend.
 
 ## Arquitectura
 
-- `frontend/src/app` — rutas de Next.js (sin lógica de negocio)
-- `frontend/src/features/<feature>` — `views`, `components`, `hooks`, `types`
-- `frontend/src/shared` — código reutilizable (`api`, `config`, `components`, `hooks`, `utils`, `types`)
-- `backend/app/main.py` — ensambla la app
-- `backend/app/core` — settings y CORS
-- `backend/app/features/<feature>` — `controller`, `service`, `models`
-- `backend/app/shared` — helpers entre features
+Mapa del turno de voz (orbe → Whisper → regex → Hermes si hace falta → tele/tutor/chat) y diagramas: [docs/arquitectura.md](docs/arquitectura.md).
 
-Una feature no importa otra. Si algo se comparte, sube a `shared`.
+- `frontend/src/app` — rutas de Next.js (sin negocio). El navegador habla con `/bf-api/...`, no con `:8000` a pelo.
+- `frontend/src/features/<feature>` — `views`, `components`, `hooks`, `types`. La vista orquesta la UI; el hook hace fetch o APIs del navegador.
+- `frontend/src/shared` — `api`, `config`, `components`, `hooks`, `utils`, `types`.
+- `backend/app/main.py` — ensambla routers y CORS. Sin lógica de dominio.
+- `backend/app/core` — settings y arranque.
+- `backend/app/features/<feature>` — `controller`, `service`, `models`. El controller no llama a Groq ni escribe prompts.
+- `backend/app/shared` — helpers entre features (`shared/ai`: Groq Whisper + chat).
+
+Una feature no importa otra, **salvo** `commands`: orquesta voz y llama a `tv`, `ps5`, `heating`, `conversation` y `hermes`. Si hace falta compartir más, sube a `shared`.
+
+### Qué hace cada feature (backend)
+
+| Feature | Rol |
+| --- | --- |
+| `commands` | `POST /commands/dispatch`: audio → STT → comando. Es lo que usa el orbe. |
+| `conversation` | STT helper y `POST /conversation/turn` (pruebas / tutor). |
+| `japanese` | Cerebro del tutor (prompts y parseo). Groq, no Hermes. |
+| `tv` / `ps5` / `heating` | Dispositivos. Regex + estos servicios, **nunca** tools de un agente. |
+| `hermes` | Router de texto cuando el regex no pilla comando. Sidecar `:8642` si hay `HERMES_API_URL`; si no, Groq. |
+| `health` / `boot` | Healthcheck y portero (`:7999`) para despertar el API. |
+
+`hermes` no tiene controller HTTP: lo llama `commands`.
+
+### Voz (orbe)
+
+```
+mic → POST /commands/dispatch
+     → Groq Whisper (castellano/inglés; si el STT sale en tamil/islandés/…, segundo pase language=es)
+     → regex (catálogo de casa)
+     → si unknown: router Hermes (skills = catálogo; agentes: hoy solo chat)
+     → comando capado → tv / ps5 / heating
+     → japanese_turn → Groq tutor
+     → agent_turn → reply del chat
+```
+
+El hint «Te oí» (`understood`) es una frase corta por Groq, **en paralelo** con la tele/PS5 (máx. 3 s desde que hay comando). Si no llega, el título del catálogo. No pasa por el sidecar Hermes (tools se comían el timeout del front).
+
+Casa y chat no van por el mismo camino: tele/Play/calefacción están capadas en Python. Hermes solo elige id de skill o `chat` cuando no hay match.
+
+Agentes en [`backend/app/features/hermes/registry.py`](backend/app/features/hermes/registry.py): `chat` activo; `web`, `japanese`, `discord` planned.
 
 ## Arranque local
 
@@ -30,10 +59,23 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
+```
+
+En `backend/.env`: `GROQ_API_KEY=gsk_...` (https://console.groq.com/keys). Si falta, el backend responde 503.
+
+Opcional — router Hermes en vez de Groq para `unknown`:
+
+- `~/.hermes/.env`: `API_SERVER_ENABLED=true` y `API_SERVER_KEY`
+- `backend/.env`: `HERMES_API_URL=http://127.0.0.1:8642` y `HERMES_API_KEY` igual que esa key
+- `hermes gateway restart` (un solo proceso en `:8642`; no lances un segundo `hermes gateway`)
+
+```bash
 uvicorn app.main:app --reload --port 8000
 ```
 
 Comprueba: http://localhost:8000/health
+
+`--reload` recarga código; un cambio en `.env` pide reiniciar uvicorn.
 
 ### Frontend
 
@@ -57,7 +99,7 @@ En local, reinicia `pnpm dev` si cambias `.env.local`.
 
 ### Móvil: `start-grok`
 
-Un comando: portero (`:7999`) + túnel ngrok. El tutor `:8000` lo enciende el portero al primer uso. Mac despierto.
+Un comando: portero (`:7999`) + Hermes API (`:8642`, si está instalado) + túnel ngrok. El API `:8000` lo enciende el portero al primer uso. Mac despierto.
 
 ```bash
 cd /Users/andream31/real-projects/besto-friendo
@@ -76,17 +118,3 @@ launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.bestofriendo.home-ap
 ```
 
 Esquema y cada paso en palabras simples: [docs/movil-y-portero.md](docs/movil-y-portero.md).
-
-## Fase 2
-
-Grabar audio en el navegador y enviarlo a `POST /conversation/audio`.
-
-## Fase 3
-
-Turno con IA: `POST /conversation/turn` (Groq Whisper + chat). La respuesta se lee en el navegador (`ja-JP`).
-
-1. Crea una API key en https://console.groq.com/keys (gratis; no es ChatGPT).
-2. En `backend/.env`: `GROQ_API_KEY=gsk_...`
-3. Reinicia uvicorn e instala deps si hace falta: `pip install -r requirements.txt`
-
-Si falta la key, el backend responde 503.

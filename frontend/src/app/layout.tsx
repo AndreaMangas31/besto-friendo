@@ -15,6 +15,12 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Besto Friendo",
   description: "Tutor de conversación en japonés",
+  // Nombre bajo el icono al “Añadir a pantalla de inicio” en iOS.
+  appleWebApp: {
+    capable: true,
+    title: "Besto Friendo",
+    statusBarStyle: "default",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

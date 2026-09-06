@@ -11,7 +11,10 @@ import {
   type OrbPersona,
 } from "@/features/conversation/types/orb";
 import { modeNotice } from "@/features/conversation/types/preview";
-import type { ChatMessage, PracticeMode } from "@/features/conversation/types/turn";
+import type {
+  ChatMessage,
+  PracticeMode,
+} from "@/features/conversation/types/turn";
 
 export type ApplyDispatchHandlers = {
   openJapaneseChat: () => void;
@@ -29,7 +32,8 @@ export type ApplyDispatchHandlers = {
 
 /** “Te oí” solo con understood. El STT crudo (tamil, islandés…) no se enseña. */
 function hintWithHeard(message: string, heard: string): string {
-  const bit = heard ? ` Te oí: “${heard}”.` : "";
+  // const bit = heard ? ` Te oí: “${heard}”.` : "";
+  const bit = "¿Qué más quieres que haga?";
   return `${message}${bit}`;
 }
 

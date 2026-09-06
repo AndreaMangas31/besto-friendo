@@ -1,0 +1,39 @@
+/* El globo no es un fade de Tailwind: entra desde abajo y el anterior sale hacia arriba. */
+.idle-speech-bubble[data-phase="in"] {
+  animation: idle-speech-in 0.28s ease-out;
+}
+
+.idle-speech-bubble[data-phase="out"] {
+  animation: idle-speech-out 0.18s ease-in forwards;
+}
+
+@keyframes idle-speech-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes idle-speech-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .idle-speech-bubble[data-phase="in"],
+  .idle-speech-bubble[data-phase="out"] {
+    animation: none;
+  }
+}

@@ -1,79 +1,30 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { BestoFriendoSuccessAnimation } from "@/features/conversation/components/BestoFriendoSuccessAnimation";
-import { CancelButton } from "@/features/conversation/components/CancelButton";
 import { ChatPanel } from "@/features/conversation/components/ChatPanel";
+import { IdleFooter } from "@/features/conversation/components/IdleFooter";
 import { ShellParticles } from "@/features/conversation/components/ShellParticles";
 import { TutorStage } from "@/features/conversation/components/TutorStage";
+import { applyDispatchResult } from "@/features/conversation/hooks/applyDispatchResult";
 import { useAudioRecorder } from "@/features/conversation/hooks/useAudioRecorder";
 import { useDispatchCommand } from "@/features/conversation/hooks/useDispatchCommand";
+import { useOrbPress } from "@/features/conversation/hooks/useOrbPress";
 import { useSpeechPlayback } from "@/features/conversation/hooks/useSpeechPlayback";
-import {
-  HEATING_COMMANDS,
-  PS5_COMMANDS,
-  TV_COMMANDS,
-} from "@/features/conversation/types/commands";
-import {
-  nextHeatingMood,
-  nextOrbPersona,
-  type HeatingMood,
-  type OrbPersona,
+import type {
+  HeatingMood,
+  OrbPersona,
 } from "@/features/conversation/types/orb";
+import {
+  GREETING,
+  orbPreviewFromParam,
+} from "@/features/conversation/types/preview";
 import type {
   ChatMessage,
   PracticeMode,
 } from "@/features/conversation/types/turn";
 import "./conversation-shell.css";
-
-const GREETING: ChatMessage = {
-  role: "assistant",
-  text: "Hola. Soy tu tutor de japonés. Dime algo y practicamos.",
-  blocks: [
-    {
-      type: "text",
-      text: "Hola. Soy tu tutor de japonés. Dime algo y practicamos.",
-    },
-  ],
-};
-
-const MODE_LABEL: Record<PracticeMode, string> = {
-  conversar: "Conversar",
-  corregir: "Corregir",
-  ideas: "Darme ideas",
-};
-
-/** Duración de la marca OOPS antes de abrir el micro (un ciclo de orb-confused-mark). */
-const OOPS_MS = 550;
-/** Squash + OOPS al pulsar (también en ESCUCHANDO, sin retrasar el envío). */
-const POKE_MS = 480;
-
-function modeNotice(mode: PracticeMode): ChatMessage {
-  return {
-    role: "assistant",
-    text: `Vale, pasamos a ${MODE_LABEL[mode]}.`,
-    blocks: [{ type: "text", text: `Vale, pasamos a ${MODE_LABEL[mode]}.` }],
-  };
-}
-
-/** ?orb= en el primer paint; si va en useEffect el HTML (y el fondo) salen idle. */
-function orbPreviewFromParam(preview: string | null): {
-  persona: OrbPersona;
-  mood: HeatingMood;
-  japaneseEnabled: boolean;
-} {
-  if (preview === "japanese") {
-    return { persona: "japanese", mood: "cold", japaneseEnabled: true };
-  }
-  if (preview === "tv" || preview === "play" || preview === "heating") {
-    return { persona: preview, mood: "cold", japaneseEnabled: false };
-  }
-  if (preview === "heating-warm") {
-    return { persona: "heating", mood: "warm", japaneseEnabled: false };
-  }
-  return { persona: "idle", mood: "cold", japaneseEnabled: false };
-}
 
 export function ConversationView() {
   const searchParams = useSearchParams();
@@ -93,25 +44,12 @@ export function ConversationView() {
   const [lunaOn, setLunaOn] = useState(searchParams.get("luna") === "1");
   const [lunaPlayKey, setLunaPlayKey] = useState(0);
   const [heatingMood, setHeatingMood] = useState<HeatingMood>(orbPreview.mood);
-  const [oopsing, setOopsing] = useState(false);
-  const [poked, setPoked] = useState(false);
-  const [pokeMark, setPokeMark] = useState<string | null>(null);
-  const oopsTimerRef = useRef<number | null>(null);
-  const pokeTimerRef = useRef<number | null>(null);
+
+  const isRecording = recorder.status === "recording";
+  const isSending = dispatcher.status === "sending";
 
   const clearSuccessAnimation = useCallback(() => {
     setSuccessPlayKey(null);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (oopsTimerRef.current !== null) {
-        window.clearTimeout(oopsTimerRef.current);
-      }
-      if (pokeTimerRef.current !== null) {
-        window.clearTimeout(pokeTimerRef.current);
-      }
-    };
   }, []);
 
   const playLuna = useCallback(() => {
@@ -124,11 +62,10 @@ export function ConversationView() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    // ?burst=1 enseña el overlay sin mandar un comando a la tele/PS5.
+    // ?burst=1 / ?luna=1: preview visual sin pasar por el micro ni la tele.
     if (params.get("burst") === "1") {
       setSuccessPlayKey(1);
     }
-    // ?luna=1 enseña orejas + guau sin pasar por el micro.
     if (params.get("luna") === "1") {
       playLuna();
     }
@@ -140,18 +77,6 @@ export function ConversationView() {
     }
     setSuccessPlayKey((current) => (current ?? 0) + 1);
   }
-
-  const isRecording = recorder.status === "recording";
-  const isSending = dispatcher.status === "sending";
-  const orbActivity = isRecording
-    ? "listening"
-    : isSending
-      ? "thinking"
-      : oopsing
-        ? "oops"
-        : confused
-          ? "confused"
-          : "idle";
 
   function openJapaneseChat() {
     setConfused(false);
@@ -193,125 +118,24 @@ export function ConversationView() {
         japaneseEnabled,
         mode,
       );
+      // null = cancel, timeout 20s o error de red; el dispatcher ya pintó el mensaje.
       if (!result) {
         return;
       }
 
-      // Luna se queda champagne hasta el siguiente comando (no un timeout).
-      if (result.command !== "call_luna") {
-        setLunaOn(false);
-      }
-
-      if (result.command === "enable_japanese_mode") {
-        openJapaneseChat();
-        return;
-      }
-
-      if (result.command === "disable_japanese_mode") {
-        setConfused(false);
-        applyPersona("idle");
-        setHint(null);
-        return;
-      }
-
-      if (result.command === "set_practice_mode" && result.practice_mode) {
-        setConfused(false);
-        setMode(result.practice_mode);
-        setMessages((current) => [
-          ...current,
-          modeNotice(result.practice_mode!),
-        ]);
-        return;
-      }
-
-      if (result.command === "call_luna") {
-        playLuna();
-        if (result.device_message) {
-          setHint(result.device_message);
-        }
-        return;
-      }
-
-      if (PS5_COMMANDS.has(result.command)) {
-        setConfused(false);
-        const heard = result.transcript
-          ? ` Te oí: “${result.transcript}”.`
-          : "";
-        const fallback =
-          result.command === "ps5_power_on"
-            ? "Mandé despertar la PlayStation."
-            : "La mandé a reposo.";
-        setHint(`${result.device_message ?? fallback}${heard}`);
-        celebrateDeviceSuccess(result.ok);
-        const persona = nextOrbPersona(result.command);
-        if (result.ok && persona) {
-          applyPersona(persona);
-        }
-        return;
-      }
-
-      if (TV_COMMANDS.has(result.command)) {
-        setConfused(false);
-        const heard = result.transcript
-          ? ` Te oí: “${result.transcript}”.`
-          : "";
-        setHint(
-          `${result.device_message ?? "Mandé el comando a la tele."}${heard}`,
-        );
-        celebrateDeviceSuccess(result.ok);
-        const persona = nextOrbPersona(result.command);
-        if (result.ok && persona) {
-          applyPersona(persona);
-        }
-        return;
-      }
-
-      if (HEATING_COMMANDS.has(result.command)) {
-        setConfused(false);
-        const heard = result.transcript
-          ? ` Te oí: “${result.transcript}”.`
-          : "";
-        setHint(
-          `${result.device_message ?? "Mandé el comando a la calefacción."}${heard}`,
-        );
-        celebrateDeviceSuccess(result.ok);
-        const persona = nextOrbPersona(result.command);
-        if (result.ok && persona) {
-          applyPersona(persona);
-        }
-        // Mood aparte de la persona: encender/bajar tiembla; subir/poner grados humito.
-        const mood = nextHeatingMood(result.command);
-        if (result.ok && mood) {
-          setHeatingMood(mood);
-        }
-        return;
-      }
-
-      if (result.command === "japanese_turn" && result.turn) {
-        setConfused(false);
-        const turn = result.turn;
-        setMessages((current) => [
-          ...current,
-          { role: "user", text: turn.user_text },
-          {
-            role: "assistant",
-            text: turn.assistant_text,
-            speak: turn.speak || turn.assistant_text,
-            blocks: turn.blocks,
-          },
-        ]);
-        if (turn.speak) {
-          speakJapanese(turn.speak);
-        }
-        return;
-      }
-
-      setConfused(true);
-      setHint(
-        result.transcript
-          ? `No encajó como comando de activar. Te oí algo como: “${result.transcript}”.`
-          : "No encajó como comando. Di enable japanese mode, más o menos.",
-      );
+      applyDispatchResult(result, {
+        openJapaneseChat,
+        applyPersona,
+        playLuna,
+        setHint,
+        setConfused,
+        setMode,
+        setMessages,
+        setHeatingMood,
+        setLunaOn,
+        celebrateDeviceSuccess,
+        speakJapanese,
+      });
       return;
     }
 
@@ -324,47 +148,33 @@ export function ConversationView() {
     void handleTalkClick();
   };
 
-  function flashPoke(mark: "OOPS" | "VOOOOY") {
-    setPokeMark(mark);
-    setPoked(true);
-    if (pokeTimerRef.current !== null) {
-      window.clearTimeout(pokeTimerRef.current);
-    }
-    pokeTimerRef.current = window.setTimeout(() => {
-      pokeTimerRef.current = null;
-      setPoked(false);
-      setPokeMark(null);
-    }, POKE_MS);
-  }
+  const orbPress = useOrbPress({
+    isRecording,
+    isSending,
+    startRecording: () => {
+      void recorder.start();
+    },
+    commitRecording: talk,
+    cancelSpeech,
+    onClearHint: () => setHint(null),
+    onClearConfused: () => setConfused(false),
+  });
 
+  // listening > thinking > oops > confused: si no, OOPS pisa ESCUCHANDO al pulsar.
+  const orbActivity = isRecording
+    ? "listening"
+    : isSending
+      ? "thinking"
+      : orbPress.oopsing
+        ? "oops"
+        : confused
+          ? "confused"
+          : "idle";
+
+  // Cancelar aborta el fetch; el corte a 20s vive en useDispatchCommand, no aquí.
   function handleCancelTurn() {
     dispatcher.cancel();
     setHint("Cortaste el turno.");
-  }
-
-  function handleOrbPress() {
-    if (isSending || oopsing) {
-      return;
-    }
-
-    if (isRecording) {
-      flashPoke("VOOOOY");
-      setHint(null);
-      talk();
-      return;
-    }
-
-    flashPoke("OOPS");
-    setHint(null);
-
-    cancelSpeech();
-    setConfused(false);
-    setOopsing(true);
-    oopsTimerRef.current = window.setTimeout(() => {
-      oopsTimerRef.current = null;
-      setOopsing(false);
-      void recorder.start();
-    }, OOPS_MS);
   }
 
   return (
@@ -395,36 +205,21 @@ export function ConversationView() {
             luna={lunaOn}
             lunaPlayKey={lunaPlayKey}
             heatingMood={heatingMood}
-            onOrbPress={!japaneseEnabled ? handleOrbPress : undefined}
+            // En japonés el CTA es Hablar del chat: el orbe compacto no graba.
+            onOrbPress={!japaneseEnabled ? orbPress.onPress : undefined}
             orbPressDisabled={isSending}
-            poked={poked}
-            pokeMark={pokeMark}
+            poked={orbPress.poked}
+            pokeMark={orbPress.pokeMark}
           />
 
           {!japaneseEnabled ? (
-            <div className="mt-auto space-y-3 px-4 pb-8 sm:px-6">
-              {isSending ? <CancelButton onClick={handleCancelTurn} /> : null}
-              {isSending ? (
-                <p className="text-center text-sm text-zinc-500">
-                  Escuchando el comando…
-                </p>
-              ) : null}
-              {hint ? (
-                <p className="wrap-break-word text-center text-sm text-zinc-600">
-                  {hint}
-                </p>
-              ) : null}
-              {recorder.errorMessage ? (
-                <p className="text-center text-sm text-red-700" role="alert">
-                  {recorder.errorMessage}
-                </p>
-              ) : null}
-              {dispatcher.errorMessage ? (
-                <p className="text-center text-sm text-red-700" role="alert">
-                  {dispatcher.errorMessage}
-                </p>
-              ) : null}
-            </div>
+            <IdleFooter
+              isSending={isSending}
+              hint={hint}
+              recorderError={recorder.errorMessage}
+              dispatchError={dispatcher.errorMessage}
+              onCancel={handleCancelTurn}
+            />
           ) : null}
         </div>
 

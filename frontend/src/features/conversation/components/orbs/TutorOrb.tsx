@@ -1,5 +1,9 @@
 import "./orb-base.css";
-import type { HeatingMood, OrbActivity, OrbPersona } from "@/features/conversation/types/orb";
+import type {
+  HeatingMood,
+  OrbActivity,
+  OrbPersona,
+} from "@/features/conversation/types/orb";
 import { heatingOrb } from "@/features/conversation/components/orbs/heating/HeatingOrb";
 import { idleOrb } from "@/features/conversation/components/orbs/idle/IdleOrb";
 import { japaneseOrb } from "@/features/conversation/components/orbs/japanese/JapaneseOrb";
@@ -77,9 +81,13 @@ export function TutorOrb({
   const stageBody = (
     <>
       <LunaTail key={`luna-tail-${lunaPlayKey}`} />
-      {activity === "thinking" && !poked ? <span className="tutor-orb-think-mark">?</span> : null}
+      {activity === "thinking" && !poked ? (
+        <span className="tutor-orb-think-mark">?</span>
+      ) : null}
       {activity === "confused" && !poked ? (
-        <span className="tutor-orb-think-mark tutor-orb-confused-mark">???</span>
+        <span className="tutor-orb-think-mark tutor-orb-confused-mark">
+          ???
+        </span>
       ) : null}
       {activity === "oops" || poked ? (
         <span className="tutor-orb-think-mark tutor-orb-confused-mark tutor-orb-poke-mark">
@@ -99,7 +107,9 @@ export function TutorOrb({
   );
 
   return (
-    <div className={`flex flex-col items-center gap-4 ${hidden ? "invisible" : ""}`}>
+    <div
+      className={`flex flex-col items-center gap-4 ${hidden ? "invisible" : ""}`}
+    >
       {onPress ? (
         <button
           type="button"
@@ -130,12 +140,12 @@ export function TutorOrb({
       <div className="flex flex-col items-center gap-1.5 text-center">
         <div className="flex items-center gap-2">
           {copy.icon}
-          <p className="text-base font-semibold tracking-[0.18em] text-zinc-800 sm:text-lg">
+          <p className="text-xl font-semibold tracking-[0.18em] text-zinc-800 sm:text-xl">
             {copy.title}
           </p>
         </div>
         {copy.subtitle ? (
-          <p className="text-sm text-zinc-500 sm:text-base">{copy.subtitle}</p>
+          <p className="text-xl text-zinc-500 sm:text-base">{copy.subtitle}</p>
         ) : null}
       </div>
     </div>

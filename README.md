@@ -48,35 +48,28 @@ Abre: http://localhost:3000
 
 Si el backend está parado, la página debe mostrar un error claro de conexión.
 
-El navegador **nunca** llama a `:8000` a pelo. Pide `/bf-api/...` al mismo Next; Next reescribe a `BACKEND_URL` ([`frontend/next.config.ts`](frontend/next.config.ts)).
+El navegador **nunca** llama a `:8000` a pelo. Pide `/bf-api/...` al mismo Next ([`frontend/src/app/bf-api/[...path]/route.ts`](frontend/src/app/bf-api/[...path]/route.ts)).
 
-- **Local** (`pnpm dev`): `BACKEND_URL=http://localhost:8000` en `.env.local`. No hay túnel ni Vercel. Mac → Next :3000 → uvicorn :8000.
-- **Móvil / Vercel**: el JS sigue pidiendo `/bf-api` a `besto-friendo.vercel.app`. En Vercel, `BACKEND_URL` es **Secret** (la URL de `cloudflared`). El túnel no va al bundle.
+- **Local** (`pnpm dev`): `BACKEND_URL=http://localhost:8000` en `.env.local`, **sin** `BACKEND_WAKE_KEY`. Mac → Next :3000 → uvicorn :8000.
+- **Móvil / Vercel**: el JS pide `/bf-api` a `besto-friendo.vercel.app`. Secrets: `BACKEND_URL` (ngrok) y `BACKEND_WAKE_KEY` (igual que `BOOT_SECRET` del Mac). El Route Handler añade `X-Besto-Boot`. Nada de eso va al bundle.
 
-Cambia `BACKEND_URL` en Vercel → Redeploy. En local, reinicia `pnpm dev`.
+En local, reinicia `pnpm dev` si cambias `.env.local`.
 
-### Móvil: el túnel no lo abre el teléfono
+### Móvil: portero + ngrok (Mac despierto)
 
-El móvil solo abre [https://besto-friendo.vercel.app](https://besto-friendo.vercel.app). Si el Mac está dormido o no hay `cloudflared`, no hay API.
+El móvil solo abre [https://besto-friendo.vercel.app](https://besto-friendo.vercel.app). Si el Mac está dormido, no hay túnel.
 
-Al iniciar sesión en el Mac, un LaunchAgent puede levantar uvicorn + túnel:
+El LaunchAgent deja vivo el **portero** (`uvicorn app.boot:app` en `:7999`) y ngrok a esa URL fija. La primera petición arranca el tutor en `:8000`.
 
 ```bash
 ./scripts/install-mac-launchagent.sh
 launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.bestofriendo.home-api.plist
 ```
 
-Quick tunnel (`trycloudflare.com`): **URL nueva cada arranque** → hay que actualizar `BACKEND_URL` en Vercel.
-
-**URL fija (ngrok, plan gratis):**
-
-1. Cuenta en https://dashboard.ngrok.com/signup
-2. Authtoken: https://dashboard.ngrok.com/get-started/your-authtoken → `ngrok config add-authtoken TOKEN`
-3. El hostname fijo está en https://dashboard.ngrok.com/domains (tipo `xxxx.ngrok-free.dev`)
-4. En Vercel, Secret `BACKEND_URL=https://xxxx.ngrok-free.dev` **una vez**
-5. El script `scripts/mac-home-api.sh` usa ngrok si hay authtoken
-
-Túnel Cloudflare con nombre (`~/.cloudflared/config.yml`) también deja URL fija, pero pide un dominio en Cloudflare.
+1. Ngrok: https://dashboard.ngrok.com/signup — token y dominio fijo (`pug-stump-approve.ngrok-free.dev` o el tuyo).
+2. `backend/.env`: `BOOT_SECRET` (una cadena larga).
+3. Vercel Secrets: `BACKEND_URL=https://….ngrok-free.dev` y `BACKEND_WAKE_KEY` = el mismo secreto. Borra `NEXT_PUBLIC_API_URL` si sigue ahí.
+4. Despliega el front con el Route Handler `/bf-api`.
 
 ## Fase 2
 

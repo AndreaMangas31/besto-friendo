@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-// Mismo navy que el recorte de la bolita. iOS usa apple-icon; Android estos PNG.
+// Splash PWA navy; los PNG de icono van con fondo transparente.
 const NAVY = "#0b1220";
 
 export default function manifest(): MetadataRoute.Manifest {

@@ -38,5 +38,8 @@ class Settings(BaseSettings):
     migo_brand: str = "sdbg"
     migo_country: str = "spain"
 
+    # Portero :7999. Mismo valor que BACKEND_WAKE_KEY en Vercel. Nunca NEXT_PUBLIC_.
+    boot_secret: str = ""
+
 
 settings = Settings()

@@ -1,0 +1,29 @@
+.tutor-orb.tutor-orb--tv {
+  background:
+    radial-gradient(42% 38% at 32% 28%, rgba(255, 247, 237, 0.45) 0%, transparent 62%),
+    radial-gradient(80% 80% at 50% 58%, #431407 0%, #1c0f08 55%, #fb923c 100%);
+  box-shadow:
+    0 0 0 1px rgba(251, 146, 60, 0.4),
+    0 18px 50px rgba(249, 115, 22, 0.4),
+    inset 0 -18px 28px rgba(40, 16, 4, 0.55);
+}
+
+.tutor-orb-eye.tutor-orb-eye--tv {
+  top: 42%;
+  height: 12%;
+  width: 16%;
+  opacity: 0.92;
+}
+
+.tutor-orb-ring--tv {
+  width: 96%;
+  height: 42%;
+  border-color: rgba(251, 146, 60, 0.4);
+  animation: orb-ring-spin 16s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tutor-orb-ring--tv {
+    animation: none;
+  }
+}

@@ -9,6 +9,7 @@ import { useAudioRecorder } from "@/features/conversation/hooks/useAudioRecorder
 import { useDispatchCommand } from "@/features/conversation/hooks/useDispatchCommand";
 import { useSpeechPlayback } from "@/features/conversation/hooks/useSpeechPlayback";
 import { PS5_COMMANDS, TV_COMMANDS } from "@/features/conversation/types/commands";
+import { nextOrbPersona, type OrbPersona } from "@/features/conversation/types/orb";
 import type { ChatMessage, PracticeMode } from "@/features/conversation/types/turn";
 
 const GREETING: ChatMessage = {
@@ -41,6 +42,7 @@ export function ConversationView() {
   const dispatcher = useDispatchCommand();
   const speech = useSpeechPlayback();
   const [japaneseEnabled, setJapaneseEnabled] = useState(false);
+  const [orbPersona, setOrbPersona] = useState<OrbPersona>("idle");
   const [mode, setMode] = useState<PracticeMode>("conversar");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [hint, setHint] = useState<string | null>(null);
@@ -51,9 +53,15 @@ export function ConversationView() {
   }, []);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
     // ?burst=1 enseña el overlay sin mandar un comando a la tele/PS5.
-    if (new URLSearchParams(window.location.search).get("burst") === "1") {
+    if (params.get("burst") === "1") {
       setSuccessPlayKey(1);
+    }
+    // ?orb=tv|play|japanese para ver el personaje sin el dispositivo.
+    const preview = params.get("orb");
+    if (preview === "japanese" || preview === "tv" || preview === "play") {
+      setOrbPersona(preview);
     }
   }, []);
 
@@ -66,19 +74,28 @@ export function ConversationView() {
 
   const isRecording = recorder.status === "recording";
   const isSending = dispatcher.status === "sending";
+  const orbActivity = isRecording ? "listening" : isSending ? "thinking" : "idle";
 
   function openJapaneseChat() {
     setJapaneseEnabled(true);
+    setOrbPersona("japanese");
     setHint(null);
     setMessages((current) => (current.length === 0 ? [GREETING] : current));
   }
 
+  // Cierra el tutor sin tocar el orbe ni el hint (tele/Play acaban de escribirlo).
   function closeJapaneseChat() {
     speech.cancel();
     setJapaneseEnabled(false);
     setMessages([]);
     setMode("conversar");
-    setHint(null);
+  }
+
+  function applyPersona(persona: OrbPersona) {
+    if (persona !== "japanese" && japaneseEnabled) {
+      closeJapaneseChat();
+    }
+    setOrbPersona(persona);
   }
 
   async function handleTalkClick() {
@@ -103,7 +120,8 @@ export function ConversationView() {
       }
 
       if (result.command === "disable_japanese_mode") {
-        closeJapaneseChat();
+        applyPersona("idle");
+        setHint(null);
         return;
       }
 
@@ -121,6 +139,10 @@ export function ConversationView() {
             : "La mandé a reposo.";
         setHint(`${result.device_message ?? fallback}${heard}`);
         celebrateDeviceSuccess(result.ok);
+        const persona = nextOrbPersona(result.command);
+        if (result.ok && persona) {
+          applyPersona(persona);
+        }
         return;
       }
 
@@ -130,6 +152,10 @@ export function ConversationView() {
           `${result.device_message ?? "Mandé el comando a la tele."}${heard}`,
         );
         celebrateDeviceSuccess(result.ok);
+        const persona = nextOrbPersona(result.command);
+        if (result.ok && persona) {
+          applyPersona(persona);
+        }
         return;
       }
 
@@ -176,9 +202,12 @@ export function ConversationView() {
       >
         <div className={japaneseEnabled ? "md:w-[42%]" : "flex-1"}>
           <TutorStage
+            persona={orbPersona}
+            activity={orbActivity}
             japaneseEnabled={japaneseEnabled}
             mode={mode}
             onModeChange={setMode}
+            hideOrb={successPlayKey !== null}
           />
 
           {!japaneseEnabled ? (

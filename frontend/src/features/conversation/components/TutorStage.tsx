@@ -4,18 +4,25 @@ import { CommandHelp } from "@/features/conversation/components/CommandHelp";
 import { PracticeModes } from "@/features/conversation/components/PracticeModes";
 import { TutorOrb } from "@/features/conversation/components/TutorOrb";
 import { useCommandCatalog } from "@/features/conversation/hooks/useCommandCatalog";
+import type { OrbActivity, OrbPersona } from "@/features/conversation/types/orb";
 import type { PracticeMode } from "@/features/conversation/types/turn";
 
 type TutorStageProps = {
+  persona: OrbPersona;
+  activity: OrbActivity;
   japaneseEnabled: boolean;
   mode: PracticeMode;
   onModeChange: (mode: PracticeMode) => void;
+  hideOrb?: boolean;
 };
 
 export function TutorStage({
+  persona,
+  activity,
   japaneseEnabled,
   mode,
   onModeChange,
+  hideOrb = false,
 }: TutorStageProps) {
   const catalog = useCommandCatalog();
 
@@ -39,7 +46,7 @@ export function TutorStage({
         </p>
       </div>
 
-      <TutorOrb active={japaneseEnabled} />
+      <TutorOrb persona={persona} activity={activity} hidden={hideOrb} />
 
       {japaneseEnabled ? (
         <PracticeModes value={mode} onChange={onModeChange} />

@@ -49,7 +49,7 @@ export function BestoFriendoSuccessAnimation({
         <div className="bff-success-backdrop absolute inset-0 bg-zinc-950/70" />
 
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="bff-success-orb tutor-orb h-64 w-64 opacity-80 blur-[1px] md:h-80 md:w-80 rounded-full" />
+          <div className="bff-success-orb h-64 w-64 opacity-80 blur-[1px] md:h-80 md:w-80 opacity-20" />
         </div>
 
         <div className="absolute inset-0 flex items-center justify-center p-6">

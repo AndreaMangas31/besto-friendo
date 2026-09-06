@@ -11,7 +11,7 @@ from app.features.commands.models import CommandName, DispatchResponse, Practice
 from app.features.conversation.models import ConversationTurnResponse
 from app.features.conversation.service import run_turn_from_text, transcribe_upload
 from app.features.hermes.models import CatalogSkill, RouterIntent
-from app.features.hermes.service import chat_turn, conversation_hello, rewrite_heard, route_unknown
+from app.features.hermes.service import chat_turn, rewrite_heard, route_unknown
 from app.shared.ai.factory import AiNotConfiguredError
 from app.features.heating.service import power_off as heating_power_off
 from app.features.heating.service import power_on as heating_power_on
@@ -783,19 +783,8 @@ async def dispatch(
         )
 
     if command == "enable_conversation_mode":
-        hello = await conversation_hello()
-        return DispatchResponse(
-            command=command,
-            transcript=transcript,
-            turn=ConversationTurnResponse(
-                user_text=transcript,
-                assistant_text=hello.assistant_text,
-                speak=hello.speak,
-                audio_mime=hello.audio_mime or "",
-                audio_base64=hello.audio_base64 or "",
-            ),
-            agent_id="chat",
-        )
+        # El hola es mp3 local (misma voz que “a ver”). No esperamos TTS aquí.
+        return DispatchResponse(command=command, transcript=transcript, agent_id="chat")
 
     # Groq del hint a la vez que tele/PS5: no sumar 3s después del Cast.
     heard_started = time.monotonic()

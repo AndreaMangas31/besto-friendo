@@ -96,7 +96,7 @@ export function TutorOrb({
           {pokeMark ?? "OOPS"}
         </span>
       ) : null}
-      {activity === "listening" ? (
+      {activity === "listening" || activity === "speaking" ? (
         <>
           <span className="tutor-orb-listen-ripple tutor-orb-listen-ripple--a" />
           <span className="tutor-orb-listen-ripple tutor-orb-listen-ripple--b" />

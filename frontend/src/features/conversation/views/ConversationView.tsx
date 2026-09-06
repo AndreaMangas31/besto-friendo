@@ -16,12 +16,8 @@ import type {
   HeatingMood,
   OrbPersona,
 } from "@/features/conversation/types/orb";
-import {
-  CHAT_GREETING,
-  GREETING,
-  orbPreviewFromParam,
-} from "@/features/conversation/types/preview";
-import { pickConversationFiller } from "@/features/conversation/types/fillers";
+import { CHAT_GREETING, GREETING, orbPreviewFromParam } from "@/features/conversation/types/preview";
+import { CONVERSATION_HELLO_SRC, pickConversationFiller } from "@/features/conversation/types/fillers";
 import type {
   ChatMessage,
   PracticeMode,
@@ -33,8 +29,14 @@ export function ConversationView() {
   const orbPreview = orbPreviewFromParam(searchParams.get("orb"));
   const recorder = useAudioRecorder();
   const dispatcher = useDispatchCommand();
-  const { speakJapanese, playModelAudio, playAudioSrc, bark, cancel: cancelSpeech } =
-    useSpeechPlayback();
+  const {
+    speakJapanese,
+    playModelAudio,
+    playAudioSrc,
+    bark,
+    cancel: cancelSpeech,
+    isSpeaking,
+  } = useSpeechPlayback();
   const [japaneseEnabled, setJapaneseEnabled] = useState(
     orbPreview.japaneseEnabled,
   );
@@ -127,6 +129,7 @@ export function ConversationView() {
     setMessages((current) =>
       fromJp || current.length === 0 ? [CHAT_GREETING] : current,
     );
+    playAudioSrc(CONVERSATION_HELLO_SRC);
   }
 
   // Cierra el tutor sin tocar el orbe ni el hint (tele/Play acaban de escribirlo).
@@ -225,7 +228,9 @@ export function ConversationView() {
         ? "oops"
         : confused
           ? "confused"
-          : "idle";
+          : conversationEnabled && isSpeaking
+            ? "speaking"
+            : "idle";
 
   const chatOpen = japaneseEnabled || conversationEnabled;
   function handleCancelTurn() {

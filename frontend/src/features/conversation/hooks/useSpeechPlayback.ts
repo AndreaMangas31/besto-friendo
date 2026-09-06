@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 
 function pickJapaneseVoice(): SpeechSynthesisVoice | undefined {
   const voices = window.speechSynthesis.getVoices();
@@ -27,11 +27,30 @@ function blobUrlFromBase64(base64: string, mime: string): string {
   return URL.createObjectURL(new Blob([bytes], { type: mime || "audio/mpeg" }));
 }
 
+function attachSpeakEvents(
+  player: HTMLAudioElement,
+  audioRef: { current: HTMLAudioElement | null },
+  setSpeaking: (on: boolean) => void,
+) {
+  const isCurrent = () => audioRef.current === player;
+  player.onplay = () => {
+    if (isCurrent()) setSpeaking(true);
+  };
+  player.onended = () => {
+    if (isCurrent()) setSpeaking(false);
+  };
+  player.onpause = () => {
+    if (isCurrent()) setSpeaking(false);
+  };
+}
+
 export function useSpeechPlayback() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const objectUrlRef = useRef<string | null>(null);
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   const cancel = useCallback(() => {
+    setIsSpeaking(false);
     if (typeof window !== "undefined" && window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
@@ -56,7 +75,9 @@ export function useSpeechPlayback() {
       objectUrlRef.current = url;
       const player = new Audio(url);
       audioRef.current = player;
+      attachSpeakEvents(player, audioRef, setIsSpeaking);
       void player.play().catch(() => {
+        setIsSpeaking(false);
         // Autoplay bloqueado: el usuario ya pulsó Hablar; el texto sigue en el chat.
       });
     },
@@ -71,7 +92,8 @@ export function useSpeechPlayback() {
       cancel();
       const player = new Audio(src);
       audioRef.current = player;
-      void player.play().catch(() => undefined);
+      attachSpeakEvents(player, audioRef, setIsSpeaking);
+      void player.play().catch(() => setIsSpeaking(false));
     },
     [cancel],
   );
@@ -114,5 +136,5 @@ export function useSpeechPlayback() {
     window.speechSynthesis.speak(utterance);
   }, [cancel]);
 
-  return { speakJapanese, playModelAudio, playAudioSrc, bark, cancel };
+  return { speakJapanese, playModelAudio, playAudioSrc, bark, cancel, isSpeaking };
 }

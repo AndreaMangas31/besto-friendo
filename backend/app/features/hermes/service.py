@@ -20,8 +20,6 @@ Majo, simpático, servicial y empático. Te ríes con la gente (jaja/jajaja si h
 Sin markdown, listas, JSON ni ensayos. Si preguntan algo de ahora o un hecho que no sepas, busca y resume con la fuente. Si falla, dilo.
 No controles tele, Play ni calefacción: eso es otro modo."""
 
-CONVERSATION_HELLO = "Hola. ¿Qué necesitas?"
-
 
 def _extract_json_object(raw: str) -> Optional[dict]:
     text = raw.strip()
@@ -223,30 +221,6 @@ async def chat_turn(transcript: str, history_json: Optional[str]) -> ChatTurn:
     return ChatTurn(
         user_text=transcript,
         assistant_text=reply,
-        speak=speak,
-        audio_mime=audio_mime,
-        audio_base64=audio_base64,
-    )
-
-
-async def conversation_hello() -> ChatTurn:
-    """Saludo al activar modo conversación. Misma voz que el turno (OpenAI / Edge)."""
-    speak = CONVERSATION_HELLO
-    audio_mime = None
-    audio_base64 = None
-    try:
-        tts = await synthesize_speech(speak)
-        if tts:
-            audio_mime, audio_base64 = tts
-    except Exception as exc:
-        logger.info("TTS conversation_hello falló err=%s", exc)
-    logger.info(
-        "conversation_hello audio_bytes=%s",
-        len(audio_base64) if audio_base64 else 0,
-    )
-    return ChatTurn(
-        user_text="",
-        assistant_text=speak,
         speak=speak,
         audio_mime=audio_mime,
         audio_base64=audio_base64,

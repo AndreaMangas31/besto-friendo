@@ -17,6 +17,7 @@ from app.features.hermes.tts import OPENAI_TTS_INSTRUCTIONS
 OUT = Path(__file__).resolve().parent.parent / "frontend" / "public" / "conversation-fillers"
 
 CLIPS = {
+    "hola.mp3": "Hola. ¿Qué necesitas?",
     "un-momento.mp3": "Un momentito, jajaja.",
     "voy-a-mirarlo.mp3": "Voy a mirarlo, jaja.",
     "un-segundo.mp3": "Un segundito, porfa, jajaja.",

@@ -3,7 +3,7 @@ import type { CommandName } from "@/features/conversation/types/commands";
 
 export type OrbPersona = "idle" | "japanese" | "chat" | "tv" | "play" | "heating";
 
-export type OrbActivity = "idle" | "listening" | "thinking" | "confused" | "oops";
+export type OrbActivity = "idle" | "listening" | "thinking" | "speaking" | "confused" | "oops";
 
 /** Frío = tiembla con bufanda. Calor = humito de alivio. */
 export type HeatingMood = "cold" | "warm";

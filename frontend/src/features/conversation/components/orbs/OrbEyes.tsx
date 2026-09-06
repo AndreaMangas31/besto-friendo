@@ -7,7 +7,8 @@ type OrbEyesProps = {
 
 export function OrbEyes({ variant, activity }: OrbEyesProps) {
   // OOPS reutiliza el vistazo de confundido; no hace falta otra animación de ojos.
-  const eyeActivity = activity === "oops" ? "confused" : activity;
+  const eyeActivity =
+    activity === "oops" ? "confused" : activity === "speaking" ? "listening" : activity;
 
   return (
     <>

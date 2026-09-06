@@ -29,6 +29,8 @@ export function modeNotice(mode: PracticeMode): ChatMessage {
 export const CHAT_GREETING: ChatMessage = {
   role: "assistant",
   text: "Hola. ¿Qué necesitas?",
+  speak: "Hola. ¿Qué necesitas?",
+  audioSrc: "/conversation-fillers/hola.mp3",
 };
 
 /** ?orb= en el primer paint; si va en useEffect el HTML (y el fondo) salen idle. */

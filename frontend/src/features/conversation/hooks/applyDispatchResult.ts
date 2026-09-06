@@ -59,25 +59,6 @@ export function applyDispatchResult(
 
   if (result.command === "enable_conversation_mode") {
     handlers.openConversationChat();
-    const turn = result.turn;
-    if (turn?.assistant_text) {
-      const audioSrc =
-        turn.audio_base64 && turn.audio_base64.length > 0
-          ? `data:${turn.audio_mime || "audio/mpeg"};base64,${turn.audio_base64}`
-          : undefined;
-      // openConversationChat acaba de poner CHAT_GREETING; el updater lo pisa con el hello TTS.
-      handlers.setMessages(() => [
-        {
-          role: "assistant",
-          text: turn.assistant_text,
-          speak: turn.speak || turn.assistant_text,
-          audioSrc,
-        },
-      ]);
-    }
-    if (turn?.audio_base64) {
-      handlers.playModelAudio(turn.audio_base64, turn.audio_mime || "audio/mpeg");
-    }
     return;
   }
 

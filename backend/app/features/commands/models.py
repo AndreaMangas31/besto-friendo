@@ -29,6 +29,7 @@ CommandName = Literal[
     "heating_temp_down",
     "heating_set_temp",
     "call_luna",
+    "agent_turn",
     "unknown",
 ]
 PracticeMode = Literal["conversar", "corregir", "ideas"]
@@ -80,3 +81,8 @@ class DispatchResponse(BaseModel):
     device_message: Optional[str] = None
     # None = no es comando de dispositivo. True/False = tele, PS5 o calefacción.
     ok: Optional[bool] = None
+    # Conversación del agente router (o futuros agentes). No es el tutor japonés.
+    agent_id: Optional[str] = None
+    agent_message: Optional[str] = None
+    # Frase clara para “Te oí”. El STT crudo se queda en transcript.
+    understood: Optional[str] = None

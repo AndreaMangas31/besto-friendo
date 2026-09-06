@@ -27,10 +27,14 @@ export type ApplyDispatchHandlers = {
   speakJapanese: (text: string) => void;
 };
 
-/** El STT a veces acierta el comando y falla el texto; el hint enseña ambos. */
-function hintWithHeard(message: string, transcript: string): string {
-  const heard = transcript ? ` Te oí: “${transcript}”.` : "";
-  return `${message}${heard}`;
+/** “Te oí” solo con understood. El STT crudo (tamil, islandés…) no se enseña. */
+function hintWithHeard(message: string, heard: string): string {
+  const bit = heard ? ` Te oí: “${heard}”.` : "";
+  return `${message}${bit}`;
+}
+
+function heardPhrase(result: DispatchResponse): string {
+  return result.understood?.trim() ?? "";
 }
 
 export function applyDispatchResult(
@@ -79,7 +83,7 @@ export function applyDispatchResult(
         ? "Mandé despertar la PlayStation."
         : "La mandé a reposo.";
     handlers.setHint(
-      hintWithHeard(result.device_message ?? fallback, result.transcript),
+      hintWithHeard(result.device_message ?? fallback, heardPhrase(result)),
     );
     handlers.celebrateDeviceSuccess(result.ok);
     const persona = nextOrbPersona(result.command);
@@ -94,7 +98,7 @@ export function applyDispatchResult(
     handlers.setHint(
       hintWithHeard(
         result.device_message ?? "Mandé el comando a la tele.",
-        result.transcript,
+        heardPhrase(result),
       ),
     );
     handlers.celebrateDeviceSuccess(result.ok);
@@ -110,7 +114,7 @@ export function applyDispatchResult(
     handlers.setHint(
       hintWithHeard(
         result.device_message ?? "Mandé el comando a la calefacción.",
-        result.transcript,
+        heardPhrase(result),
       ),
     );
     handlers.celebrateDeviceSuccess(result.ok);
@@ -123,6 +127,16 @@ export function applyDispatchResult(
     if (result.ok && mood) {
       handlers.setHeatingMood(mood);
     }
+    return;
+  }
+
+  if (result.command === "agent_turn") {
+    handlers.setConfused(false);
+    handlers.setHint(
+      result.agent_message
+        ? hintWithHeard(result.agent_message, heardPhrase(result))
+        : hintWithHeard("Vale.", heardPhrase(result)),
+    );
     return;
   }
 
@@ -146,9 +160,5 @@ export function applyDispatchResult(
   }
 
   handlers.setConfused(true);
-  handlers.setHint(
-    result.transcript
-      ? `No encajó como comando de activar. Te oí algo como: “${result.transcript}”.`
-      : "No encajó como comando. Di enable japanese mode, más o menos.",
-  );
+  handlers.setHint("No encajó como comando. Prueba otra vez o mira la lista.");
 }

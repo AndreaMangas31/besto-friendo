@@ -29,6 +29,7 @@ export type CommandName =
   | "heating_temp_down"
   | "heating_set_temp"
   | "call_luna"
+  | "agent_turn"
   | "unknown";
 
 export type DispatchResponse = {
@@ -38,13 +39,19 @@ export type DispatchResponse = {
   practice_mode: PracticeMode | null;
   device_message: string | null;
   ok: boolean | null;
+  agent_id: string | null;
+  agent_message: string | null;
+  understood: string | null;
 };
 
 export type DispatchStatus = "idle" | "sending" | "ok" | "error";
 
 export type CommandHelpGroup = "tutor" | "tv" | "ps5" | "heating";
 
-export type CommandHelpId = Exclude<CommandName, "japanese_turn" | "unknown" | "call_luna">;
+export type CommandHelpId = Exclude<
+  CommandName,
+  "japanese_turn" | "unknown" | "call_luna" | "agent_turn"
+>;
 
 export type CommandHelpItem = {
   id: CommandHelpId;

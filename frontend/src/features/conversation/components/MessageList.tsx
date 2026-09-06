@@ -3,7 +3,7 @@ import type { ChatMessage, ContentBlock } from "@/features/conversation/types/tu
 
 type MessageListProps = {
   messages: ChatMessage[];
-  onReplay?: (speak: string) => void;
+  onReplay?: (message: ChatMessage) => void;
 };
 
 function AssistantBlocks({ blocks, speak }: { blocks: ContentBlock[]; speak?: string }) {
@@ -33,7 +33,9 @@ export function MessageList({ messages, onReplay }: MessageListProps) {
     <ul className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-1 py-2">
       {messages.map((message, index) => {
         const isUser = message.role === "user";
-        const canReplay = !isUser && Boolean(message.speak?.trim());
+        const canReplay =
+          !isUser &&
+          Boolean(message.speak?.trim() || message.audioSrc);
 
         return (
           <li
@@ -56,8 +58,8 @@ export function MessageList({ messages, onReplay }: MessageListProps) {
                     <button
                       type="button"
                       className="mt-2 text-zinc-400 hover:text-zinc-700"
-                      aria-label="Repetir japonés"
-                      onClick={() => onReplay(message.speak ?? "")}
+                      aria-label="Repetir audio"
+                      onClick={() => onReplay(message)}
                     >
                       <svg
                         viewBox="0 0 24 24"

@@ -15,6 +15,7 @@ type TutorStageProps = {
   persona: OrbPersona;
   activity: OrbActivity;
   japaneseEnabled: boolean;
+  conversationEnabled: boolean;
   mode: PracticeMode;
   onModeChange: (mode: PracticeMode) => void;
   hideOrb?: boolean;
@@ -31,6 +32,7 @@ export function TutorStage({
   persona,
   activity,
   japaneseEnabled,
+  conversationEnabled,
   mode,
   onModeChange,
   hideOrb = false,
@@ -61,7 +63,9 @@ export function TutorStage({
           <p className="mx-auto max-w-sm wrap-break-word px-1 text-zinc-600">
             {japaneseEnabled
               ? "Tutor de japonés. Habla o cambia de modo con la voz o los botones."
-              : "Pulsa el orbe para hablar. El menú lista lo que puedes hacer."}
+              : conversationEnabled
+                ? "Modo conversación. Pulsa Hablar; tele y casa esperan a que salgas."
+                : "Pulsa el orbe para hablar. El menú lista lo que puedes hacer."}
           </p>
         </div>
       </div>
@@ -74,7 +78,7 @@ export function TutorStage({
           luna={luna}
           lunaPlayKey={lunaPlayKey}
           heatingMood={heatingMood}
-          hero={!japaneseEnabled}
+          hero={!japaneseEnabled && !conversationEnabled}
           onPress={onOrbPress}
           pressDisabled={orbPressDisabled}
           poked={poked}

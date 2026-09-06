@@ -4,6 +4,7 @@ import type {
   OrbActivity,
   OrbPersona,
 } from "@/features/conversation/types/orb";
+import { chatOrb } from "@/features/conversation/components/orbs/chat/ChatOrb";
 import { heatingOrb } from "@/features/conversation/components/orbs/heating/HeatingOrb";
 import { idleOrb } from "@/features/conversation/components/orbs/idle/IdleOrb";
 import { japaneseOrb } from "@/features/conversation/components/orbs/japanese/JapaneseOrb";
@@ -14,6 +15,7 @@ import type { OrbVariant } from "@/features/conversation/components/orbs/variant
 const ORB_VARIANTS: Record<OrbPersona, OrbVariant> = {
   idle: idleOrb,
   japanese: japaneseOrb,
+  chat: chatOrb,
   tv: tvOrb,
   play: playOrb,
   heating: heatingOrb,

@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     groq_stt_model: str = "whisper-large-v3"
     groq_chat_model: str = "openai/gpt-oss-120b"
 
-    # Sidecar Hermes (OpenAI-compatible). Vacío = el router usa Groq.
+    # Sidecar Hermes: solo el modo conversación (tools web). El router unknown va a Groq.
     hermes_api_url: str = ""
     hermes_api_key: str = ""
 

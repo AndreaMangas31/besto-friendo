@@ -32,7 +32,7 @@ for _ in $(seq 1 40); do
   sleep 0.5
 done
 
-# Sidecar del router. El installer de Hermes lo pone en launchd: `hermes gateway`
+# Sidecar del modo conversación (web search). El installer de Hermes lo pone en launchd.
 # en foreground choca. Si :8642 no está, restart/start del servicio.
 _hermes=""
 if command -v hermes >/dev/null 2>&1; then

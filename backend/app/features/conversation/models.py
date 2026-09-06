@@ -15,6 +15,9 @@ class ConversationTurnResponse(BaseModel):
     assistant_text: str
     speak: str = ""
     blocks: List[ContentBlock] = Field(default_factory=list)
+    # Modo conversación: mp3/wav del backend. El tutor japonés no lo usa.
+    audio_mime: str = ""
+    audio_base64: str = ""
     # Compat con el cliente anterior (opcional).
     explanation: str = ""
     segments: List[JapaneseSegment] = Field(default_factory=list)

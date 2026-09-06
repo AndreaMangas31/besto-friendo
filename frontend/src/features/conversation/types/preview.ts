@@ -26,20 +26,54 @@ export function modeNotice(mode: PracticeMode): ChatMessage {
   };
 }
 
+export const CHAT_GREETING: ChatMessage = {
+  role: "assistant",
+  text: "Hola. Pregúntame lo que quieras. Si es de ahora, miro internet.",
+};
+
 /** ?orb= en el primer paint; si va en useEffect el HTML (y el fondo) salen idle. */
 export function orbPreviewFromParam(preview: string | null): {
   persona: OrbPersona;
   mood: HeatingMood;
   japaneseEnabled: boolean;
+  conversationEnabled: boolean;
 } {
   if (preview === "japanese") {
-    return { persona: "japanese", mood: "cold", japaneseEnabled: true };
+    return {
+      persona: "japanese",
+      mood: "cold",
+      japaneseEnabled: true,
+      conversationEnabled: false,
+    };
+  }
+  if (preview === "chat") {
+    return {
+      persona: "chat",
+      mood: "cold",
+      japaneseEnabled: false,
+      conversationEnabled: true,
+    };
   }
   if (preview === "tv" || preview === "play" || preview === "heating") {
-    return { persona: preview, mood: "cold", japaneseEnabled: false };
+    return {
+      persona: preview,
+      mood: "cold",
+      japaneseEnabled: false,
+      conversationEnabled: false,
+    };
   }
   if (preview === "heating-warm") {
-    return { persona: "heating", mood: "warm", japaneseEnabled: false };
+    return {
+      persona: "heating",
+      mood: "warm",
+      japaneseEnabled: false,
+      conversationEnabled: false,
+    };
   }
-  return { persona: "idle", mood: "cold", japaneseEnabled: false };
+  return {
+    persona: "idle",
+    mood: "cold",
+    japaneseEnabled: false,
+    conversationEnabled: false,
+  };
 }

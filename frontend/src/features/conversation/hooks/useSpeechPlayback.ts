@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 
 function pickJapaneseVoice(): SpeechSynthesisVoice | undefined {
   const voices = window.speechSynthesis.getVoices();
@@ -18,13 +18,63 @@ function pickSpanishVoice(): SpeechSynthesisVoice | undefined {
   );
 }
 
+function blobUrlFromBase64(base64: string, mime: string): string {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return URL.createObjectURL(new Blob([bytes], { type: mime || "audio/mpeg" }));
+}
+
 export function useSpeechPlayback() {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const objectUrlRef = useRef<string | null>(null);
+
   const cancel = useCallback(() => {
-    if (typeof window === "undefined" || !window.speechSynthesis) {
-      return;
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
     }
-    window.speechSynthesis.cancel();
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = "";
+      audioRef.current = null;
+    }
   }, []);
+
+  const playModelAudio = useCallback(
+    (base64: string, mime = "audio/mpeg") => {
+      if (typeof window === "undefined" || !base64.trim()) {
+        return;
+      }
+      cancel();
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+        objectUrlRef.current = null;
+      }
+      const url = blobUrlFromBase64(base64, mime);
+      objectUrlRef.current = url;
+      const player = new Audio(url);
+      audioRef.current = player;
+      void player.play().catch(() => {
+        // Autoplay bloqueado: el usuario ya pulsó Hablar; el texto sigue en el chat.
+      });
+    },
+    [cancel],
+  );
+
+  const playAudioSrc = useCallback(
+    (src: string) => {
+      if (typeof window === "undefined" || !src.trim()) {
+        return;
+      }
+      cancel();
+      const player = new Audio(src);
+      audioRef.current = player;
+      void player.play().catch(() => undefined);
+    },
+    [cancel],
+  );
 
   const speakJapanese = useCallback(
     (text: string) => {
@@ -64,5 +114,5 @@ export function useSpeechPlayback() {
     window.speechSynthesis.speak(utterance);
   }, [cancel]);
 
-  return { speakJapanese, bark, cancel };
+  return { speakJapanese, playModelAudio, playAudioSrc, bark, cancel };
 }

@@ -5,7 +5,7 @@ AGENTS: tuple[AgentSpec, ...] = (
     AgentSpec(
         id="chat",
         status="active",
-        description="Conversación cuando no hay comando de casa.",
+        description="Charla de voz y preguntas. En modo conversación busca en internet si hace falta.",
     ),
     AgentSpec(
         id="web",

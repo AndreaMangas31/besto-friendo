@@ -12,7 +12,7 @@ type ChatPanelProps = {
   notice?: string | null;
   onTalk: () => void;
   onCancel: () => void;
-  onReplay: (speak: string) => void;
+  onReplay: (message: ChatMessage) => void;
 };
 
 export function ChatPanel({

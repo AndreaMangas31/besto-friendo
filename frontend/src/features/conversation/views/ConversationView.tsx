@@ -17,9 +17,11 @@ import type {
   OrbPersona,
 } from "@/features/conversation/types/orb";
 import {
+  CHAT_GREETING,
   GREETING,
   orbPreviewFromParam,
 } from "@/features/conversation/types/preview";
+import { pickConversationFiller } from "@/features/conversation/types/fillers";
 import type {
   ChatMessage,
   PracticeMode,
@@ -31,13 +33,25 @@ export function ConversationView() {
   const orbPreview = orbPreviewFromParam(searchParams.get("orb"));
   const recorder = useAudioRecorder();
   const dispatcher = useDispatchCommand();
-  const { speakJapanese, bark, cancel: cancelSpeech } = useSpeechPlayback();
+  const { speakJapanese, playModelAudio, playAudioSrc, bark, cancel: cancelSpeech } =
+    useSpeechPlayback();
   const [japaneseEnabled, setJapaneseEnabled] = useState(
     orbPreview.japaneseEnabled,
   );
+  const [conversationEnabled, setConversationEnabled] = useState(
+    orbPreview.conversationEnabled,
+  );
   const [orbPersona, setOrbPersona] = useState<OrbPersona>(orbPreview.persona);
   const [mode, setMode] = useState<PracticeMode>("conversar");
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    if (orbPreview.japaneseEnabled) {
+      return [GREETING];
+    }
+    if (orbPreview.conversationEnabled) {
+      return [CHAT_GREETING];
+    }
+    return [];
+  });
   const [hint, setHint] = useState<string | null>(null);
   const [successPlayKey, setSuccessPlayKey] = useState<number | null>(null);
   const [confused, setConfused] = useState(false);
@@ -47,6 +61,18 @@ export function ConversationView() {
 
   const isRecording = recorder.status === "recording";
   const isSending = dispatcher.status === "sending";
+
+  // Espera ~400 ms: un “hola” rápido no suena el filler. Al terminar, no cancelar aquí
+  // (pisaría el mp3 de la respuesta); playModelAudio ya corta el filler.
+  useEffect(() => {
+    if (!conversationEnabled || !isSending) {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      playAudioSrc(pickConversationFiller());
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [conversationEnabled, isSending, playAudioSrc]);
 
   const clearSuccessAnimation = useCallback(() => {
     setSuccessPlayKey(null);
@@ -80,10 +106,27 @@ export function ConversationView() {
 
   function openJapaneseChat() {
     setConfused(false);
+    const fromChat = conversationEnabled;
+    setConversationEnabled(false);
     setJapaneseEnabled(true);
     setOrbPersona("japanese");
     setHint(null);
-    setMessages((current) => (current.length === 0 ? [GREETING] : current));
+    setMessages((current) =>
+      fromChat || current.length === 0 ? [GREETING] : current,
+    );
+  }
+
+  function openConversationChat() {
+    cancelSpeech();
+    setConfused(false);
+    const fromJp = japaneseEnabled;
+    setJapaneseEnabled(false);
+    setConversationEnabled(true);
+    setOrbPersona("chat");
+    setHint(null);
+    setMessages((current) =>
+      fromJp || current.length === 0 ? [CHAT_GREETING] : current,
+    );
   }
 
   // Cierra el tutor sin tocar el orbe ni el hint (tele/Play acaban de escribirlo).
@@ -94,9 +137,18 @@ export function ConversationView() {
     setMode("conversar");
   }
 
+  function closeConversationChat() {
+    cancelSpeech();
+    setConversationEnabled(false);
+    setMessages([]);
+  }
+
   function applyPersona(persona: OrbPersona) {
     if (persona !== "japanese" && japaneseEnabled) {
       closeJapaneseChat();
+    }
+    if (persona !== "chat" && conversationEnabled) {
+      closeConversationChat();
     }
     setOrbPersona(persona);
   }
@@ -117,14 +169,17 @@ export function ConversationView() {
         messages,
         japaneseEnabled,
         mode,
+        conversationEnabled,
       );
       // null = cancel, timeout 20s o error de red; el dispatcher ya pintó el mensaje.
       if (!result) {
+        cancelSpeech();
         return;
       }
 
       applyDispatchResult(result, {
         openJapaneseChat,
+        openConversationChat,
         applyPersona,
         playLuna,
         setHint,
@@ -135,6 +190,7 @@ export function ConversationView() {
         setLunaOn,
         celebrateDeviceSuccess,
         speakJapanese,
+        playModelAudio,
       });
       return;
     }
@@ -171,9 +227,10 @@ export function ConversationView() {
           ? "confused"
           : "idle";
 
-  // Cancelar aborta el fetch; el corte a 20s vive en useDispatchCommand, no aquí.
+  const chatOpen = japaneseEnabled || conversationEnabled;
   function handleCancelTurn() {
     dispatcher.cancel();
+    cancelSpeech();
     setHint("Cortaste el turno.");
   }
 
@@ -187,32 +244,33 @@ export function ConversationView() {
       <ShellParticles />
       <div
         className={`relative z-10 mx-auto flex h-full min-w-0 w-full max-w-full flex-1 flex-col ${
-          japaneseEnabled ? "max-w-6xl md:flex-row" : "max-w-xl"
+          chatOpen ? "max-w-6xl md:flex-row" : "max-w-xl"
         }`}
       >
         <div
           className={`flex min-h-0 min-w-0 flex-col ${
-            japaneseEnabled ? "md:w-[42%]" : "flex-1"
+            chatOpen ? "md:w-[42%]" : "flex-1"
           }`}
         >
           <TutorStage
             persona={orbPersona}
             activity={orbActivity}
             japaneseEnabled={japaneseEnabled}
+            conversationEnabled={conversationEnabled}
             mode={mode}
             onModeChange={setMode}
             hideOrb={successPlayKey !== null}
             luna={lunaOn}
             lunaPlayKey={lunaPlayKey}
             heatingMood={heatingMood}
-            // En japonés el CTA es Hablar del chat: el orbe compacto no graba.
-            onOrbPress={!japaneseEnabled ? orbPress.onPress : undefined}
+            // En chat el CTA es Hablar del panel: el orbe compacto no graba.
+            onOrbPress={!chatOpen ? orbPress.onPress : undefined}
             orbPressDisabled={isSending}
             poked={orbPress.poked}
             pokeMark={orbPress.pokeMark}
           />
 
-          {!japaneseEnabled ? (
+          {!chatOpen ? (
             <IdleFooter
               isSending={isSending}
               hint={hint}
@@ -223,7 +281,7 @@ export function ConversationView() {
           ) : null}
         </div>
 
-        {japaneseEnabled ? (
+        {chatOpen ? (
           <div className="flex min-w-0 flex-1 flex-col p-4 md:p-6">
             <ChatPanel
               messages={messages}
@@ -234,7 +292,15 @@ export function ConversationView() {
               notice={hint}
               onTalk={talk}
               onCancel={handleCancelTurn}
-              onReplay={speakJapanese}
+              onReplay={(message) => {
+                if (message.audioSrc) {
+                  playAudioSrc(message.audioSrc);
+                  return;
+                }
+                if (message.speak) {
+                  speakJapanese(message.speak);
+                }
+              }}
             />
           </div>
         ) : null}

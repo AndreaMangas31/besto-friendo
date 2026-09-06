@@ -14,6 +14,11 @@
   --panel-bg: #f5d6dc;
 }
 
+.conversation-shell[data-persona="chat"] {
+  --page-bg: linear-gradient(165deg, #eef2ff 0%, #e0e7ff 46%, #c7d2fe 100%);
+  --panel-bg: #c7d2fe;
+}
+
 .conversation-shell[data-persona="tv"] {
   --page-bg: linear-gradient(165deg, #fffbeb 0%, #fef08a 48%, #fde047 100%);
   --panel-bg: #fde68a;
@@ -90,6 +95,13 @@
 .conversation-shell[data-persona="japanese"] .conversation-shell-particles span:nth-child(3n) {
   width: 16px;
   height: 16px;
+}
+
+.conversation-shell[data-persona="chat"] .conversation-shell-particles span {
+  background: #a5b4fc;
+  box-shadow: 0 0 8px #c7d2fe;
+  animation-name: shell-drift;
+  animation-timing-function: ease-in-out;
 }
 
 .conversation-shell[data-persona="tv"] .conversation-shell-particles span {

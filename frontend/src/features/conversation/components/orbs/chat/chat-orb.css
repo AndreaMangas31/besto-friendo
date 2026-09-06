@@ -1,0 +1,139 @@
+@keyframes orb-blob-chat {
+  0%,
+  100% {
+    border-radius: 52% 48% 46% 54% / 50% 44% 56% 50%;
+    transform: scale(1);
+  }
+  33% {
+    border-radius: 44% 56% 50% 50% / 46% 54% 48% 52%;
+    transform: scale(1.03);
+  }
+  66% {
+    border-radius: 56% 44% 52% 48% / 54% 46% 52% 48%;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes orb-blob-chat-wide {
+  0%,
+  100% {
+    border-radius: 60% 40% 48% 52% / 42% 58% 40% 60%;
+    transform: scale(1.05, 0.94);
+  }
+  40% {
+    border-radius: 38% 62% 44% 56% / 58% 36% 62% 42%;
+    transform: scale(0.92, 1.12);
+  }
+  75% {
+    border-radius: 58% 42% 56% 44% / 40% 60% 38% 62%;
+    transform: scale(1.1, 0.9);
+  }
+}
+
+.tutor-orb-stage--chat {
+  --orb-poke-mark: #4f46e5;
+}
+
+.tutor-orb.tutor-orb--chat {
+  overflow: hidden;
+  background:
+    radial-gradient(42% 38% at 32% 28%, rgba(238, 242, 255, 0.55) 0%, transparent 62%),
+    radial-gradient(80% 80% at 50% 58%, #1e1b4b 0%, #0f172a 55%, #818cf8 100%);
+  box-shadow:
+    0 0 0 1px rgba(165, 180, 252, 0.45),
+    0 18px 50px rgba(79, 70, 229, 0.42),
+    inset 0 -18px 28px rgba(15, 23, 42, 0.55);
+  animation-name: orb-blob-chat;
+}
+
+.tutor-orb--chat[data-activity="listening"] {
+  animation-name: orb-blob-chat-wide;
+  animation-duration: 1.15s;
+}
+
+.tutor-orb--chat[data-activity="thinking"] {
+  animation-duration: 8.5s;
+}
+
+.tutor-orb-ring--chat {
+  border-color: rgba(165, 180, 252, 0.5);
+}
+
+.tutor-orb-eye.tutor-orb-eye--chat {
+  background: #eef2ff;
+}
+
+.tutor-orb-glasses {
+  position: absolute;
+  z-index: 3;
+  left: 22%;
+  right: 22%;
+  top: 34%;
+  height: 28%;
+  pointer-events: none;
+}
+
+.tutor-orb-glasses--listening {
+  top: 31%;
+}
+
+.tutor-orb-glasses-lens {
+  position: absolute;
+  top: 18%;
+  width: 38%;
+  height: 72%;
+  border: 2.5px solid #e2e8f0;
+  border-radius: 50%;
+  box-shadow: 0 2px 0 rgba(15, 23, 42, 0.35);
+}
+
+.tutor-orb-glasses-lens--left {
+  left: 0;
+}
+
+.tutor-orb-glasses-lens--right {
+  right: 0;
+}
+
+.tutor-orb-glasses-bridge {
+  position: absolute;
+  top: 46%;
+  left: 36%;
+  right: 36%;
+  height: 8%;
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+.tutor-orb-glasses-brow {
+  position: absolute;
+  top: 4%;
+  width: 28%;
+  height: 10%;
+  border-radius: 999px;
+  background: rgba(226, 232, 240, 0.85);
+}
+
+.tutor-orb-glasses-brow--left {
+  left: 8%;
+  transform: rotate(-12deg);
+}
+
+.tutor-orb-glasses-brow--right {
+  right: 8%;
+  transform: rotate(12deg);
+}
+
+.tutor-orb-glasses--listening .tutor-orb-glasses-brow--left {
+  transform: rotate(-22deg) translateY(20%);
+}
+
+.tutor-orb-glasses--listening .tutor-orb-glasses-brow--right {
+  transform: rotate(22deg) translateY(20%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tutor-orb.tutor-orb--chat {
+    animation: none;
+  }
+}

@@ -25,6 +25,20 @@ CATALOG = CommandCatalogResponse(
             group="tutor",
         ),
         CommandHelpItem(
+            id="enable_conversation_mode",
+            title="Activar conversación",
+            example="enable conversation mode",
+            description="Abre el chat con Hermes (preguntas, explicaciones, búsqueda web). También vale ‘activa modo conversación’.",
+            group="chat",
+        ),
+        CommandHelpItem(
+            id="disable_conversation_mode",
+            title="Cerrar conversación",
+            example="disable conversation mode",
+            description="Cierra el chat y vuelve a los comandos de casa.",
+            group="chat",
+        ),
+        CommandHelpItem(
             id="tv_power_on",
             title="Encender tele",
             example="enciende la tele",

@@ -6,6 +6,7 @@ import type { DispatchResponse, DispatchStatus } from "@/features/conversation/t
 import type { ChatMessage, PracticeMode } from "@/features/conversation/types/turn";
 
 const DISPATCH_TIMEOUT_MS = 20_000;
+const CONVERSATION_TIMEOUT_MS = 55_000;
 
 function isAbortError(error: unknown): boolean {
   return error instanceof DOMException
@@ -38,6 +39,7 @@ export function useDispatchCommand() {
       history: ChatMessage[],
       japaneseEnabled: boolean,
       mode: PracticeMode,
+      conversationEnabled = false,
     ): Promise<DispatchResponse | null> => {
       abortKindRef.current = null;
       const controller = new AbortController();
@@ -48,17 +50,21 @@ export function useDispatchCommand() {
       const formData = new FormData();
       formData.append("audio", file);
       formData.append("japanese_enabled", japaneseEnabled ? "true" : "false");
+      formData.append("conversation_enabled", conversationEnabled ? "true" : "false");
       formData.append("mode", mode);
       formData.append(
         "history",
         JSON.stringify(history.map(({ role, text }) => ({ role, text }))),
       );
 
-      // Groq a veces se queda: a los 20s cortamos el fetch para no dejar PENSANDO eterno.
+      // Casa 20s; conversación ~55s porque web_search tarda.
+      const timeoutMs = conversationEnabled
+        ? CONVERSATION_TIMEOUT_MS
+        : DISPATCH_TIMEOUT_MS;
       timeoutRef.current = window.setTimeout(() => {
         abortKindRef.current = "timeout";
         controller.abort();
-      }, DISPATCH_TIMEOUT_MS);
+      }, timeoutMs);
 
       try {
         const data = await apiPostForm<DispatchResponse>(

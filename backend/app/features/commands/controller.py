@@ -17,10 +17,12 @@ def command_catalog() -> CommandCatalogResponse:
 @router.post("/commands/dispatch", response_model=DispatchResponse)
 async def dispatch_command(
     audio: UploadFile = File(...),
-    # Flag de UI: el service decide enable / disable / modo / turno, no el frontend.
+    # Flags de UI: el service decide enable / disable / turno, no el frontend.
     japanese_enabled: str = Form("false"),
+    conversation_enabled: str = Form("false"),
     history: Optional[str] = Form(None),
     mode: Optional[str] = Form(None),
 ) -> DispatchResponse:
-    enabled = japanese_enabled.strip().lower() in {"true", "1", "yes"}
-    return await dispatch(audio, enabled, history, mode)
+    jp = japanese_enabled.strip().lower() in {"true", "1", "yes"}
+    chat = conversation_enabled.strip().lower() in {"true", "1", "yes"}
+    return await dispatch(audio, jp, history, mode, chat)

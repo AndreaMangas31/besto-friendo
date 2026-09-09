@@ -52,6 +52,13 @@ async def proxy_all(request: Request, full_path: str) -> Response:
     body = await request.body()
     err, response = proxy_request(request, body)
     if err:
+        # ensure_main o proxy caído: el móvil ve 503; el detalle queda en boot.log.
+        logger.warning(
+            "túnel 503 %s %s: %s",
+            request.method,
+            request.url.path,
+            err,
+        )
         return JSONResponse({"detail": err}, status_code=503)
     assert response is not None
     return response

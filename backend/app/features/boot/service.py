@@ -76,7 +76,20 @@ def _forward_path(request: Request) -> str:
     return path
 
 
+def _error_snippet(payload: bytes, content_type: str | None) -> str:
+    # Solo JSON/texto corto: un wav de Whisper no cabe en el log.
+    if not payload or len(payload) > 800:
+        return ""
+    ctype = (content_type or "").lower()
+    if "json" not in ctype and "text" not in ctype:
+        return ""
+    text = payload.decode("utf-8", errors="replace").strip().replace("\n", " ")
+    return f" body={text[:300]}" if text else ""
+
+
 def proxy_to_main(request: Request, body: bytes) -> Response:
+    path = _forward_path(request)
+    size_in = len(body or b"")
     headers = {
         key: value
         for key, value in request.headers.items()
@@ -84,7 +97,7 @@ def proxy_to_main(request: Request, body: bytes) -> Response:
     }
     conn = http.client.HTTPConnection("127.0.0.1", MAIN_PORT, timeout=PROXY_TIMEOUT_SEC)
     try:
-        conn.request(request.method, _forward_path(request), body=body or None, headers=headers)
+        conn.request(request.method, path, body=body or None, headers=headers)
         upstream = conn.getresponse()
         payload = upstream.read()
         out_headers: Mapping[str, str] = {
@@ -92,11 +105,36 @@ def proxy_to_main(request: Request, body: bytes) -> Response:
             for key, value in upstream.getheaders()
             if key.lower() not in _HOP
         }
+        ctype = out_headers.get("content-type") or out_headers.get("Content-Type")
+        # Tunnel: ver en boot.log si el móvil recibe 4xx/5xx o el tutor respondió OK.
+        if upstream.status >= 400:
+            logger.warning(
+                "túnel %s %s → %s (in=%s out=%s)%s",
+                request.method,
+                path,
+                upstream.status,
+                size_in,
+                len(payload),
+                _error_snippet(payload, ctype),
+            )
+        else:
+            logger.info(
+                "túnel %s %s → %s (in=%s out=%s)",
+                request.method,
+                path,
+                upstream.status,
+                size_in,
+                len(payload),
+            )
         return Response(
             content=payload if request.method != "HEAD" else b"",
             status_code=upstream.status,
             headers=dict(out_headers),
         )
+    except (OSError, http.client.HTTPException, TimeoutError) as exc:
+        # Tutor caído a mitad, timeout 180s, etc.
+        logger.warning("túnel %s %s falló: %s (in=%s)", request.method, path, exc, size_in)
+        raise
     finally:
         conn.close()
 
@@ -107,4 +145,7 @@ def proxy_request(request: Request, body: bytes) -> Tuple[None, Response] | Tupl
     except Exception as exc:
         logger.warning("No se pudo arrancar el API principal: %s", exc)
         return str(exc), None
-    return None, proxy_to_main(request, body)
+    try:
+        return None, proxy_to_main(request, body)
+    except Exception as exc:
+        return str(exc), None

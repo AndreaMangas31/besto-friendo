@@ -32,9 +32,13 @@ _wake_seq = itertools.count()
 _CERT_DIR = Path(__file__).resolve().parents[3] / ".androidtv"
 _CERTFILE = _CERT_DIR / "cert.pem"
 _KEYFILE = _CERT_DIR / "key.pem"
+# El detalle de curl va en logs; el orbe solo dice qué hacer en humano.
 _PAIR_HINT = (
-    "Tele encendida, POST http://127.0.0.1:8000/tv/pair/start "
-    "y el PIN de 6 dígitos a POST /tv/pair/finish {\"pin\":\"123456\"}."
+    "Tele encendida → POST /tv/pair/start → PIN de 6 dígitos en "
+    'POST /tv/pair/finish {"pin":"XXXXXX"}.'
+)
+_PAIR_HINT_SPOKEN = (
+    "no está emparejada con este Mac. Hay que hacer el pairing una vez."
 )
 # 0.0.x manda el string tal cual; un package sin esquema no abre nada.
 _YOUTUBE_LINK = "https://www.youtube.com"
@@ -371,8 +375,8 @@ async def pair_start() -> TvActionResult:
     return TvActionResult(
         ok=True,
         message=(
-            f"Emparejando {name}. PIN de 6 dígitos en la tele, "
-            'luego POST /tv/pair/finish {"pin":"123456"}.'
+            f"Emparejando {name}. Mira el PIN de 6 dígitos en la tele "
+            "y mándalo a /tv/pair/finish."
         ),
     )
 
@@ -383,7 +387,7 @@ async def pair_finish(pin: str) -> TvActionResult:
     if remote is None:
         return TvActionResult(
             ok=False,
-            message="No hay pairing abierto. POST /tv/pair/start primero.",
+            message="No hay pairing abierto. Llama antes a /tv/pair/start.",
         )
 
     code = pin.strip().replace(" ", "")
@@ -397,7 +401,7 @@ async def pair_finish(pin: str) -> TvActionResult:
         logger.info("Pairing cerrado antes de finish")
         return TvActionResult(
             ok=False,
-            message="Se cerró el pairing. POST /tv/pair/start otra vez.",
+            message="Se cerró el pairing. Vuelve a llamar a /tv/pair/start.",
         )
 
     _pairing_remote = None
@@ -417,8 +421,9 @@ async def _connect_remote() -> Tuple[Optional[AndroidTVRemote], str, str]:
     try:
         await remote.async_connect()
     except InvalidAuth:
-        logger.info("Android TV sin pairing name=%s host=%s", name, host)
-        return None, name, f"{name} no está emparejada. {_PAIR_HINT}"
+        # Hint largo con curl solo en log; al front/voz va la frase corta.
+        logger.info("Android TV sin pairing name=%s host=%s. %s", name, host, _PAIR_HINT)
+        return None, name, f"{name} {_PAIR_HINT_SPOKEN}"
     except CannotConnect as exc:
         logger.info("Android TV mando no conectó name=%s host=%s err=%s", name, host, exc)
         return None, name, f"No conecté el mando a {name} ({host}): {exc}"

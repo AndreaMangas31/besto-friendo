@@ -58,10 +58,13 @@ if [[ -n "$_hermes" ]]; then
   if lsof -nP -iTCP:8642 -sTCP:LISTEN >/dev/null 2>&1; then
     echo "hermes :8642 ya estaba"
   else
-    echo "hermes gateway restart (servicio launchd)"
-    if ! "$_hermes" gateway restart >>"${LOGDIR}/hermes.log" 2>&1; then
-      "$_hermes" gateway start >>"${LOGDIR}/hermes.log" 2>&1 || true
-    fi
+    # Sin LaunchAgent, `gateway restart/start` se queda en foreground y nunca llega a ngrok.
+    echo "hermes gateway restart (background; si hay launchd, él lo recoge)"
+    (
+      "$_hermes" gateway restart >>"${LOGDIR}/hermes.log" 2>&1 \
+        || "$_hermes" gateway start >>"${LOGDIR}/hermes.log" 2>&1 \
+        || true
+    ) &
     if _wait_hermes_api; then
       echo "hermes API en :8642"
     else

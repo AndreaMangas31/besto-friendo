@@ -105,10 +105,11 @@ En local, reinicia `pnpm dev` si cambias `.env.local`.
 
 ### Móvil: `start-grok`
 
-Un comando: portero (`:7999`) + Hermes API (`:8642`, si está instalado) + túnel ngrok. El API `:8000` lo enciende el portero al primer uso. Mac despierto.
+Un comando: portero (`:7999`) + Hermes API (`:8642`, si está instalado) + túnel ngrok. El API `:8000` lo enciende el portero al primer uso. El Mac de casa (portátil o Mini) no puede dormir: `start-grok` lanza `caffeinate`; enchufado no basta si Energía deja suspender.
+
+Máquina nueva (Mini): clone, `./scripts/setup-mac-home.sh`, copia `backend/.env` (no está en git), `ngrok config add-authtoken`. El hostname reservado es de **una** máquina: para el túnel en el portátil **antes** de `start-grok` en el Mini.
 
 ```bash
-cd /Users/andream31/real-projects/besto-friendo
 ./scripts/start-grok
 ```
 

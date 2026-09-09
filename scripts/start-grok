@@ -10,6 +10,11 @@ NGROK_URL="https://pug-stump-approve.ngrok-free.dev"
 export PATH="${HOME}/.local/bin:/opt/homebrew/bin:/usr/local/bin:${PATH}"
 mkdir -p "$LOGDIR"
 
+# El Mini (y cualquier Mac) puede suspenderse enchufado. -s = idle del sistema; -w $$ sigue a este PID tras el exec ngrok.
+if command -v caffeinate >/dev/null 2>&1; then
+  caffeinate -s -w $$ >/dev/null 2>&1 &
+fi
+
 echo "start-grok: portero + Hermes + túnel (el tutor :8000 sale solo al usar el móvil)"
 
 if ! lsof -nP -iTCP:7999 -sTCP:LISTEN >/dev/null 2>&1; then
